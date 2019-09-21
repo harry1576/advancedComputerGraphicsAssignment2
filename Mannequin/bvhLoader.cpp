@@ -24,6 +24,11 @@ float angle = 0;
 aiVector3D scene_min, scene_max, scene_center;
 bool modelRotn = true;
 std::map<int, int> texIdMap;
+int tDuration;
+int currTick = 0;
+float timeStep = 50;
+
+
 
 //------------Modify the following as needed----------------------
 float materialCol[4] = { 0.0, 0.9, 0.9, 1 };   //Default material colour (not used if model's colour is available)
@@ -34,7 +39,7 @@ bool twoSidedLight = false;					   //Change to 'true' to enable two-sided lighti
 //-------Loads model data from file and creates a scene object----------
 bool loadModel(const char* fileName)
 {
-	scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality);
+	scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_Debone);
 	if(scene == NULL) exit(1);
 	//printSceneInfo(scene);
 	//printMeshInfo(scene);
@@ -42,6 +47,7 @@ bool loadModel(const char* fileName)
 	//printBoneInfo(scene);
 	//printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
 	get_bounding_box(scene, &scene_min, &scene_max);
+	
 	return true;
 }
 
@@ -124,9 +130,9 @@ void render (const aiScene* sc, const aiNode* nd)
 
 		materialIndex = mesh->mMaterialIndex;  //Get material index attached to the mesh
 		mtl = sc->mMaterials[materialIndex];
-	
-        if (mesh->HasTextureCoords(0)) { glEnable(GL_TEXTURE_2D); 		glBindTexture(GL_TEXTURE_2D,texIdMap[materialIndex]); }
+
 		
+	
 	
 		if (replaceCol)
 			glColor4fv(materialCol);   //User-defined colour
@@ -162,8 +168,8 @@ void render (const aiScene* sc, const aiNode* nd)
 					glNormal3fv(&mesh->mNormals[vertexIndex].x);
 
 				glVertex3fv(&mesh->mVertices[vertexIndex].x);
-					glTexCoord2f (mesh->mTextureCoords[0][vertexIndex].x ,
- mesh->mTextureCoords[0][vertexIndex].y );
+				
+				
 			}
 
 			glEnd();
@@ -197,20 +203,53 @@ void initialise()
 	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
 	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50);
 	glColor4fv(materialCol);
-	loadModel("Ana.x");			//<<<-------------Specify input file name here
+	loadModel("run.fbx");			//<<<-------------Specify input file name here
 	loadGLTextures(scene);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(35, 1, 1.0, 1000.0);
+	
+	tDuration = scene->mAnimations[0]->mDuration;
 }
+
+void updateNodeMatrices(int tick)
+{
+	int index;
+	aiAnimation* anim = scene->mAnimations[0];
+	aiMatrix4x4 matPos, matRot, matProd;
+	aiMatrix3x3 matRot3;
+	aiNode* nd;
+	for (int i = 0; i < anim->mNumChannels; i++)
+	{
+		matPos = aiMatrix4x4(); //Identity
+		matRot = aiMatrix4x4();
+		aiNodeAnim* ndAnim = anim->mChannels[i]; //Channel
+		if (ndAnim->mNumPositionKeys > 1) index = tick;
+		else index = 0;
+		aiVector3D posn = (ndAnim->mPositionKeys[index]).mValue;
+		matPos.Translation(posn, matPos);
+		if (ndAnim->mNumRotationKeys > 1) index = tick;
+		else index = 0;
+		aiQuaternion rotn = (ndAnim->mRotationKeys[index]).mValue;
+		matRot3 = rotn.GetMatrix();
+		matRot = aiMatrix4x4(matRot3);
+		matProd = matPos * matRot;
+		nd = scene->mRootNode->FindNode(ndAnim->mNodeName);
+		nd->mTransformation = matProd;
+	}
+}
+
 
 //----Timer callback for continuous rotation of the model about y-axis----
 void update(int value)
 {
+	
+
 	angle++;
 	if(angle > 360) angle = 0;
 	glutPostRedisplay();
 	glutTimerFunc(50, update, 0);
+	
 }
 
 //----Keyboard callback to toggle initial model orientation---
@@ -266,7 +305,7 @@ int main(int argc, char** argv)
 
 	initialise();
 	glutDisplayFunc(display);
-	glutTimerFunc(50, update, 0);
+	glutTimerFunc(timeStep, update, 0);
 	glutKeyboardFunc(keyboard);
 	glutMainLoop();
 
