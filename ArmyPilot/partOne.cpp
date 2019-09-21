@@ -22,7 +22,7 @@ using namespace std;
 const aiScene* scene = NULL;
 float angle = 0;
 aiVector3D scene_min, scene_max, scene_center;
-bool modelRotn = true;
+bool modelRotn = false;
 std::map<int, int> texIdMap;
 int tDuration;
 int currTick = 0;
@@ -39,12 +39,12 @@ bool twoSidedLight = false;					   //Change to 'true' to enable two-sided lighti
 //-------Loads model data from file and creates a scene object----------
 bool loadModel(const char* fileName)
 {
-	scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_Debone);
+	scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality);
 	if(scene == NULL) exit(1);
 	printSceneInfo(scene);
-	//printMeshInfo(scene);
-	//printTreeInfo(scene->mRootNode);
-	//printBoneInfo(scene);
+	printMeshInfo(scene);
+	printTreeInfo(scene->mRootNode);
+	printBoneInfo(scene);
 	//printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
 	get_bounding_box(scene, &scene_min, &scene_max);
 	
@@ -82,9 +82,7 @@ void loadGLTextures(const aiScene* scene)
 			
 	
 
-			std::string x(path.data + 62); // "0123"
-			//cout << "Path:" << x << "successfully loaded." << endl;
-
+			std::string x(path.data + 62); // "Remove weird location"
 			
 			if (ilLoadImage((ILstring)x.c_str()))   //if success
 			{
@@ -147,7 +145,6 @@ void render (const aiScene* sc, const aiNode* nd)
 		}
 		
 	
-	
 		if (replaceCol)
 			glColor4fv(materialCol);   //User-defined colour
 		else if (AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_DIFFUSE, &diffuse))  //Get material colour from model
@@ -181,12 +178,13 @@ void render (const aiScene* sc, const aiNode* nd)
 				if (mesh->HasNormals())
 					glNormal3fv(&mesh->mNormals[vertexIndex].x);
 
-				glVertex3fv(&mesh->mVertices[vertexIndex].x);
 				
 				if (mesh->HasTextureCoords(0))
 				{
 					glTexCoord2f(mesh->mTextureCoords[0][vertexIndex].x, mesh->mTextureCoords[0][vertexIndex].y);
 				}
+				glVertex3fv(&mesh->mVertices[vertexIndex].x);
+
 
 			}
 
@@ -296,7 +294,8 @@ void display()
 	glLoadIdentity();
 	gluLookAt(0, 0, 3, 0, 0, -5, 0, 1, 0);
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
-
+	glRotatef(90, 1, 0, 0);
+    glRotatef(90, 0, 0, 1);
 	glRotatef(angle, 0.f, 1.f ,0.f);  //Continuous rotation about the y-axis
 	if(modelRotn) glRotatef(-90, 1, 0, 0);		  //First, rotate the model about x-axis if needed.
 

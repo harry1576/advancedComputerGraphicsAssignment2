@@ -41,9 +41,9 @@ bool loadModel(const char* fileName)
 {
 	scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_Debone);
 	if(scene == NULL) exit(1);
-	//printSceneInfo(scene);
+	printSceneInfo(scene);
 	//printMeshInfo(scene);
-	//printTreeInfo(scene->mRootNode);
+	printTreeInfo(scene->mRootNode);
 	//printBoneInfo(scene);
 	//printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
 	get_bounding_box(scene, &scene_min, &scene_max);
@@ -67,7 +67,6 @@ void loadGLTextures(const aiScene* scene)
 	for (unsigned int m = 0; m < scene->mNumMaterials; ++m)
 	{
 		aiString path;  // filename
-
 		if (scene->mMaterials[m]->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS)
 		{
 			glEnable(GL_TEXTURE_2D);
@@ -79,6 +78,9 @@ void loadGLTextures(const aiScene* scene)
 			ilBindImage(imageId); /* Binding of DevIL image name */
 			ilEnable(IL_ORIGIN_SET);
 			ilOriginFunc(IL_ORIGIN_LOWER_LEFT);
+			
+			std::string x(path.data + 62); // "Remove weird location"
+			
 			if (ilLoadImage((ILstring)path.data))   //if success
 			{
 				/* Convert image to RGBA */
@@ -130,9 +132,15 @@ void render (const aiScene* sc, const aiNode* nd)
 
 		materialIndex = mesh->mMaterialIndex;  //Get material index attached to the mesh
 		mtl = sc->mMaterials[materialIndex];
-
-		
 	
+	    if (mesh->HasTextureCoords(0))
+	    {
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D,texIdMap[meshIndex]);
+			
+			
+		}
+		
 	
 		if (replaceCol)
 			glColor4fv(materialCol);   //User-defined colour
@@ -169,7 +177,11 @@ void render (const aiScene* sc, const aiNode* nd)
 
 				glVertex3fv(&mesh->mVertices[vertexIndex].x);
 				
-				
+				if (mesh->HasTextureCoords(0))
+				{
+					glTexCoord2f(mesh->mTextureCoords[0][vertexIndex].x, mesh->mTextureCoords[0][vertexIndex].y);
+				}
+
 			}
 
 			glEnd();
@@ -203,7 +215,7 @@ void initialise()
 	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
 	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50);
 	glColor4fv(materialCol);
-	loadModel("mannequin.fbx");			//<<<-------------Specify input file name here
+	loadModel("dwarf.x");			//<<<-------------Specify input file name here
 	loadGLTextures(scene);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -244,12 +256,20 @@ void updateNodeMatrices(int tick)
 void update(int value)
 {
 	
-
+	if(currTick < tDuration)
+	{
+		updateNodeMatrices(currTick);
+		glutTimerFunc(timeStep,update,0);
+		currTick ++;
+	}
+	glutPostRedisplay();
+	
+	/*
 	angle++;
 	if(angle > 360) angle = 0;
 	glutPostRedisplay();
 	glutTimerFunc(50, update, 0);
-	
+	*/
 }
 
 //----Keyboard callback to toggle initial model orientation---
