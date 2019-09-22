@@ -10,6 +10,7 @@
 #include <map>
 #include <GL/freeglut.h>
 #include <IL/il.h>
+#include <vector>
 using namespace std;
 
 #include <assimp/cimport.h>
@@ -28,6 +29,9 @@ int tDuration;
 int currTick = 0;
 float timeStep = 50;
 
+aiMesh copy;
+
+std::vector<aiMesh> initalData;
 
 
 //------------Modify the following as needed----------------------
@@ -224,6 +228,7 @@ void initialise()
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(35, 1, 1.0, 1000.0);
+
 	
 	tDuration = scene->mAnimations[0]->mDuration;
 }
@@ -235,7 +240,7 @@ void updateModel(int tick)
 	aiMatrix4x4 matPos, matRot, matProd;
 	aiMatrix3x3 matRot3;
 	aiNode* nd;
-	
+	aiMatrix4x4 boneTransform;
 	
 	// Step 1 Get the Transformation Matrix for each channel and replace the joint's
 	// transformation matrix
@@ -267,39 +272,33 @@ void updateModel(int tick)
 	{
 		
 		aiMesh *mesh = scene->mMeshes[i];
-
-	
 		for (int i = 0; i < mesh->mNumBones; i ++)
 		{
 			
-			aiBone *bone = mesh->mBones[i];
-			aiNode *node = scene->mRootNode->FindNode(bone->mName);
-			aiMatrix4x4 boneTransform = bone->mOffsetMatrix;
+			aiBone *bone = mesh->mBones[i];	
+			
+			aiMatrix4x4 boneOffsetMatrix = bone->mOffsetMatrix;
+		
+		    aiNode *node = scene->mRootNode->FindNode(bone->mName);
+			
+			boneTransform = boneOffsetMatrix;
+
+			
 			while (node != nullptr)
             {
 				boneTransform = node->mTransformation * boneTransform;
 				node = node->mParent;
             }
-			aiMatrix4x4 boneTransformTranspose = boneTransform.Transpose();
             
+            aiMatrix4x4 boneTransformTranspose = boneTransform.Transpose();
             
-            for(int y = 0; y < bone->mNumWeights; y ++)
+            for(int ID = 0; ID < bone->mNumWeights; ID++)
             {
-				const aiVertexWeight& weight = bone->mWeights[y];
-				const aiVector3D srcPos = mesh->mVertices[weight.mVertexId];
-				const aiVector3D srcNorm = mesh->mNormals[weight.mVertexId];
-			
-				mesh->mVertices[weight.mVertexId] = weight.mWeight * (mesh->mVertices[weight.mVertexId] *srcPos);
-				mesh->mNormals[weight.mVertexId] = weight.mWeight * (mesh->mNormals[weight.mVertexId] * srcNorm);
 
+				mesh->mVertices[(bone->mWeights[ID]).mVertexId] = boneTransform * mesh->mVertices[(bone->mWeights[ID]).mVertexId] ;
+				mesh->mNormals[(bone->mWeights[ID]).mVertexId] = boneTransformTranspose * mesh->mNormals[(bone->mWeights[ID]).mVertexId] ;
 
-			
-			}
-            
-            
-            
-            cout << "Test " << endl;
-					
+			}		
 					
 		}
 	
