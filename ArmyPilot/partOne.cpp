@@ -228,18 +228,25 @@ void initialise()
 	tDuration = scene->mAnimations[0]->mDuration;
 }
 
-void updateNodeMatrices(int tick)
+void updateModel(int tick)
 {
 	int index;
 	aiAnimation* anim = scene->mAnimations[0];
 	aiMatrix4x4 matPos, matRot, matProd;
 	aiMatrix3x3 matRot3;
 	aiNode* nd;
+	
+	
+	// Step 1 Get the Transformation Matrix for each channel and replace the joint's
+	// transformation matrix
+	
 	for (int i = 0; i < anim->mNumChannels; i++)
 	{
+				
 		matPos = aiMatrix4x4(); //Identity
 		matRot = aiMatrix4x4();
 		aiNodeAnim* ndAnim = anim->mChannels[i]; //Channel
+		
 		if (ndAnim->mNumPositionKeys > 1) index = tick;
 		else index = 0;
 		aiVector3D posn = (ndAnim->mPositionKeys[index]).mValue;
@@ -253,6 +260,56 @@ void updateNodeMatrices(int tick)
 		nd = scene->mRootNode->FindNode(ndAnim->mNodeName);
 		nd->mTransformation = matProd;
 	}
+	
+	// Step 2 Use the Offset Matrices of bones to transform mesh vertices to node space
+	
+	for (int i = 0; i < scene->mNumMeshes; i ++)
+	{
+		
+		aiMesh *mesh = scene->mMeshes[i];
+
+	
+		for (int i = 0; i < mesh->mNumBones; i ++)
+		{
+			
+			aiBone *bone = mesh->mBones[i];
+			aiNode *node = scene->mRootNode->FindNode(bone->mName);
+			aiMatrix4x4 boneTransform = bone->mOffsetMatrix;
+			while (node != nullptr)
+            {
+				boneTransform = node->mTransformation * boneTransform;
+				node = node->mParent;
+            }
+			aiMatrix4x4 boneTransformTranspose = boneTransform.Transpose();
+            
+            
+            for(int y = 0; y < bone->mNumWeights; y ++)
+            {
+				const aiVertexWeight& weight = bone->mWeights[y];
+				const aiVector3D srcPos = mesh->mVertices[weight.mVertexId];
+				const aiVector3D srcNorm = mesh->mNormals[weight.mVertexId];
+			
+				mesh->mVertices[weight.mVertexId] = weight.mWeight * (mesh->mVertices[weight.mVertexId] *srcPos);
+				mesh->mNormals[weight.mVertexId] = weight.mWeight * (mesh->mNormals[weight.mVertexId] * srcNorm);
+
+
+			
+			}
+            
+            
+            
+            cout << "Test " << endl;
+					
+					
+		}
+	
+	
+	}
+	
+	
+	
+	
+	
 }
 
 
@@ -262,7 +319,7 @@ void update(int value)
 	
 	if(currTick < tDuration)
 	{
-		updateNodeMatrices(currTick);
+		updateModel(currTick);
 		glutTimerFunc(timeStep,update,0);
 		currTick ++;
 	}

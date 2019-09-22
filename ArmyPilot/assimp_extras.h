@@ -125,7 +125,7 @@ void printTreeInfo(const aiNode* node)
 	for (int n = 0; n < 16; ++n) cout << mat[n] << " " ;
 	cout << endl;
 
-	for (int n = 0; n < node->mNumChildren; n++)
+	for (uint n = 0; n < node->mNumChildren; n++)
 		printTreeInfo(node->mChildren[n]);
 }
 

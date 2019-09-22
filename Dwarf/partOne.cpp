@@ -26,7 +26,7 @@ bool modelRotn = true;
 std::map<int, int> texIdMap;
 int tDuration;
 int currTick = 0;
-float timeStep = 50;
+float timeStep = 1;
 
 
 
@@ -45,7 +45,7 @@ bool loadModel(const char* fileName)
 	//printMeshInfo(scene);
 	printTreeInfo(scene->mRootNode);
 	//printBoneInfo(scene);
-	//printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
+	printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
 	get_bounding_box(scene, &scene_min, &scene_max);
 	
 	return true;
