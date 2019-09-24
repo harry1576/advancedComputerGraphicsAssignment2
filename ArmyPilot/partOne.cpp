@@ -30,8 +30,7 @@ int currTick = 0;
 float timeStep = 50;
 
 
-aiVector3D initalVerts [50][500][1000];
-aiVector3D initalNorms [50][500][1000];
+
 
 
 std::vector<aiMesh> initalData;
@@ -41,7 +40,7 @@ struct meshInit
 {
 	int mNumVertices;
 	aiVector3D* mVertices;
-	aiVector3D* nNormals;
+	aiVector3D* mNormals;
 
 };
 
@@ -196,13 +195,13 @@ void render (const aiScene* sc, const aiNode* nd)
 
 				if (mesh->HasNormals())
 					glNormal3fv(&mesh->mNormals[vertexIndex].x);
+				glVertex3fv(&mesh->mVertices[vertexIndex].x);
 
 				
 				if (mesh->HasTextureCoords(0))
 				{
 					glTexCoord2f(mesh->mTextureCoords[0][vertexIndex].x, mesh->mTextureCoords[0][vertexIndex].y);
 				}
-				glVertex3fv(&mesh->mVertices[vertexIndex].x);
 
 
 			}
@@ -244,23 +243,25 @@ void initialise()
 	glLoadIdentity();
 	gluPerspective(35, 1, 1.0, 1000.0);
 	
+    initData = new meshInit[scene->mNumMeshes];
+
+		
 	for (int i = 0; i < scene->mNumMeshes; i++)
     {
 	
 		aiMesh *mesh = scene->mMeshes[i];
 	
+		(initData + i)->mNumVertices = mesh->mNumVertices;
+	    (initData + i)->mVertices = new aiVector3D[mesh->mNumVertices];
+		(initData + i)->mNormals = new aiVector3D[mesh->mNumVertices];	
 		
-		for (int j = 0; j < mesh->mNumBones; j++)
-        {
-				aiBone *bone = mesh->mBones[j];	
-				
-				for(int k = 0; k < bone->mNumWeights; k++)
-				{
-				
-                initalVerts[i][j][k] = mesh->mVertices[(bone->mWeights[k]).mVertexId];
-                initalNorms[i][j][k] = mesh->mNormals[(bone->mWeights[k]).mVertexId];
-				}  
-         }
+		for(int x = 0; x < mesh->mNumVertices; x++)
+		{
+			(initData + i)->mVertices[x] = mesh->mVertices[x];
+			(initData + i)->mNormals[x] = mesh->mNormals[x];
+			
+		}
+		
 		
 	}
 	
@@ -286,7 +287,12 @@ void updateModel(int tick)
 		matRot = aiMatrix4x4();
 		aiNodeAnim* ndAnim = anim->mChannels[i]; //Channel
 
-		if (ndAnim->mNumPositionKeys > 1) index = tick;
+		if (ndAnim->mNumPositionKeys > 1)
+		{
+		   index = fmod(tick,anim->mDuration);
+
+			
+		}
 		else index = 0;
 		aiVector3D posn = (ndAnim->mPositionKeys[index]).mValue;
 		matPos.Translation(posn, matPos);
@@ -335,9 +341,20 @@ void updateModel(int tick)
             
             for(int k = 0; k < bone->mNumWeights; k++)
             {
-
-				mesh->mVertices[bone->mWeights[k].mVertexId] =  boneTransform * initalVerts[meshID][i][k];
-				mesh->mNormals[bone->mWeights[k].mVertexId] = boneTransformTranspose * initalNorms[meshID][i][k] ;
+				unsigned int vid = (bone->mWeights[k]).mVertexId;
+				// Inital data
+				aiVector3D vert = (initData + meshID)->mVertices[vid];
+				aiVector3D norm = (initData + meshID)->mNormals[vid];
+				
+				aiMatrix3x3 aiVert3x3 = aiMatrix3x3(boneTransform);
+				aiMatrix3x3 aiNorm3x3 = aiMatrix3x3(boneTransformTranspose);
+	
+	
+				//mesh->mVertices[vid] =  mesh->mVertices[vid]  ;
+				//mesh->mNormals[vid] = mesh->mNormals[vid];
+		
+				mesh->mVertices[vid] =  (aiVert3x3 * vert)+ aiVector3D(boneTransform.a4 , boneTransform.b4 , boneTransform.c4)  ;
+				mesh->mNormals[vid] = (aiNorm3x3 * norm)+ aiVector3D(boneTransformTranspose.a4 , boneTransformTranspose.b4,boneTransformTranspose.c4);
 
 			}		
 					
@@ -393,7 +410,7 @@ void display()
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 	glRotatef(90, 1, 0, 0);
     glRotatef(90, 0, 0, 1);
-	glRotatef(angle, 0.f, 1.f ,0.f);  //Continuous rotation about the y-axis
+	//glRotatef(angle, 0.f, 1.f ,0.f);  //Continuous rotation about the y-axis
 	if(modelRotn) glRotatef(-90, 1, 0, 0);		  //First, rotate the model about x-axis if needed.
 
 	// scale the whole asset to fit into our view frustum 

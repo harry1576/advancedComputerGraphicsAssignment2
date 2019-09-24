@@ -207,7 +207,7 @@ void initialise()
 //----Timer callback for continuous rotation of the model about y-axis----
 void update(int value)
 {
-	angle++;
+	//angle++;
 	if(angle > 360) angle = 0;
 	glutPostRedisplay();
 	glutTimerFunc(50, update, 0);
