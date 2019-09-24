@@ -34,6 +34,17 @@ int tDuration; //Animation duration in ticks.
 int currTick = 0; //current tick
 float timeStep = 50; //Animation time step = 50 m.sec				   //Change to 'true' to enable two-sided lighting
 
+
+struct meshInit
+{
+	int mNumVertices;
+	aiVector3D* mVertices;
+	aiVector3D* nNormals;
+
+}
+
+meshInit *initData
+
 //-------Loads model data from file and creates a scene object----------
 bool loadModel(const char* fileName)
 {

@@ -29,9 +29,24 @@ int tDuration;
 int currTick = 0;
 float timeStep = 50;
 
-aiMesh copy;
+
+aiVector3D initalVerts [50][500][1000];
+aiVector3D initalNorms [50][500][1000];
+
 
 std::vector<aiMesh> initalData;
+
+
+struct meshInit
+{
+	int mNumVertices;
+	aiVector3D* mVertices;
+	aiVector3D* nNormals;
+
+};
+
+meshInit* initData;
+
 
 
 //------------Modify the following as needed----------------------
@@ -228,7 +243,26 @@ void initialise()
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(35, 1, 1.0, 1000.0);
-
+	
+	for (int i = 0; i < scene->mNumMeshes; i++)
+    {
+	
+		aiMesh *mesh = scene->mMeshes[i];
+	
+		
+		for (int j = 0; j < mesh->mNumBones; j++)
+        {
+				aiBone *bone = mesh->mBones[j];	
+				
+				for(int k = 0; k < bone->mNumWeights; k++)
+				{
+				
+                initalVerts[i][j][k] = mesh->mVertices[(bone->mWeights[k]).mVertexId];
+                initalNorms[i][j][k] = mesh->mNormals[(bone->mWeights[k]).mVertexId];
+				}  
+         }
+		
+	}
 	
 	tDuration = scene->mAnimations[0]->mDuration;
 }
@@ -243,7 +277,7 @@ void updateModel(int tick)
 	aiMatrix4x4 boneTransform;
 	
 	// Step 1 Get the Transformation Matrix for each channel and replace the joint's
-	// transformation matrix
+	// transformation matrix using function from LAB
 	
 	for (int i = 0; i < anim->mNumChannels; i++)
 	{
@@ -251,7 +285,7 @@ void updateModel(int tick)
 		matPos = aiMatrix4x4(); //Identity
 		matRot = aiMatrix4x4();
 		aiNodeAnim* ndAnim = anim->mChannels[i]; //Channel
-		
+
 		if (ndAnim->mNumPositionKeys > 1) index = tick;
 		else index = 0;
 		aiVector3D posn = (ndAnim->mPositionKeys[index]).mValue;
@@ -266,23 +300,27 @@ void updateModel(int tick)
 		nd->mTransformation = matProd;
 	}
 	
-	// Step 2 Use the Offset Matrices of bones to transform mesh vertices to node space
 	
-	for (int i = 0; i < scene->mNumMeshes; i ++)
+	for (int meshID = 0; meshID < scene->mNumMeshes; meshID ++)
 	{
 		
-		aiMesh *mesh = scene->mMeshes[i];
+		aiMesh *mesh = scene->mMeshes[meshID];
+		
+		
+		
 		for (int i = 0; i < mesh->mNumBones; i ++)
 		{
 			
 			aiBone *bone = mesh->mBones[i];	
-			
+		    aiNode *node = scene->mRootNode->FindNode(bone->mName);
+
+			// Step 2 Use the Offset Matrices of bones to transform mesh vertices to node space
 			aiMatrix4x4 boneOffsetMatrix = bone->mOffsetMatrix;
 		
-		    aiNode *node = scene->mRootNode->FindNode(bone->mName);
 			
 			boneTransform = boneOffsetMatrix;
-
+			
+			// Step 3 get node parent transformations 
 			
 			while (node != nullptr)
             {
@@ -292,11 +330,14 @@ void updateModel(int tick)
             
             aiMatrix4x4 boneTransformTranspose = boneTransform.Transpose();
             
-            for(int ID = 0; ID < bone->mNumWeights; ID++)
+            
+            // Applying the transformations to each vertex
+            
+            for(int k = 0; k < bone->mNumWeights; k++)
             {
 
-				mesh->mVertices[(bone->mWeights[ID]).mVertexId] = boneTransform * mesh->mVertices[(bone->mWeights[ID]).mVertexId] ;
-				mesh->mNormals[(bone->mWeights[ID]).mVertexId] = boneTransformTranspose * mesh->mNormals[(bone->mWeights[ID]).mVertexId] ;
+				mesh->mVertices[bone->mWeights[k].mVertexId] =  boneTransform * initalVerts[meshID][i][k];
+				mesh->mNormals[bone->mWeights[k].mVertexId] = boneTransformTranspose * initalNorms[meshID][i][k] ;
 
 			}		
 					
