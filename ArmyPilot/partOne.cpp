@@ -28,7 +28,7 @@ std::map<int, int> texIdMap;
 int tDuration;
 int currTick = 0;
 float timeStep = 50;
-
+aiVector3D offset = aiVector3D(1.0f,1.0f,1.0f);
 
 // Mesh Struture to hold initial values
 struct meshInit
@@ -44,7 +44,7 @@ meshInit* initData;
 
 
 //------------Modify the following as needed----------------------
-float materialCol[4] = { 0.0, 0.9, 0.9, 1 };   //Default material colour (not used if model's colour is available)
+float materialCol[4] = { 1.0, 1.0, 1.0, 1 };   //Default material colour (not used if model's colour is available)
 bool replaceCol = false;					   //Change to 'true' to set the model's colour to the above colour
 float lightPosn[4] = { 0, 50, 50, 1 };         //Default light's position
 bool twoSidedLight = false;					   //Change to 'true' to enable two-sided lighting
@@ -272,12 +272,14 @@ void updateModel(int tick)
 	// Step 1 Get the Transformation Matrix for each channel and replace the joint's
 	// transformation matrix using function from LAB
 	
-	for (uint i = 0; i < anim->mNumChannels; i++)
+	for (uint i = 1; i < anim->mNumChannels; i++)
 	{
 				
 		matPos = aiMatrix4x4(); //Identity
 		matRot = aiMatrix4x4();
 		aiNodeAnim* ndAnim = anim->mChannels[i]; //Channel
+		
+		
 		
 		/*
 		if (ndAnim->mNumPositionKeys > 1) index = tick;
@@ -294,6 +296,7 @@ void updateModel(int tick)
 		double nextTime;
 		for(uint posFrame = 0; posFrame < ndAnim->mNumPositionKeys; posFrame ++)
 		{
+		
 			if(tick >= ndAnim->mPositionKeys[posFrame].mTime)
 			{
 				prevPosn = ndAnim->mPositionKeys[posFrame].mValue;
@@ -309,9 +312,15 @@ void updateModel(int tick)
 			break;
 				
 		}
-
+		
+		if(ndAnim->mNumPositionKeys == 1)
+		{
+			posn = ndAnim->mPositionKeys[0].mValue;
+			matPos.Translation(posn, matPos);
+		}
 		
 		
+		//offset = offset * aiMatrix3x3(matPos);	
 		/*
 		if (ndAnim->mNumRotationKeys > 1) index = tick; else index = 0;
 		aiQuaternion rotn = (ndAnim->mRotationKeys[index]).mValue;
@@ -344,7 +353,15 @@ void updateModel(int tick)
 			break;
 			
 		}
-
+	
+	
+		if(ndAnim->mNumRotationKeys == 1)
+		{
+			rotn = ndAnim->mRotationKeys[0].mValue;
+			matRot3 = rotn.GetMatrix();
+			matRot = aiMatrix4x4(matRot3);
+		}
+		
 		
 		matProd = matPos * matRot;
 		nd = scene->mRootNode->FindNode(ndAnim->mNodeName);
@@ -416,9 +433,14 @@ void update(int value)
 	if(currTick < tDuration)
 	{
 		updateModel(currTick);
-		glutTimerFunc(timeStep,update,0);
 		currTick ++;
 	}
+	if(currTick >= tDuration)
+	{
+		currTick = 0;
+	}
+	glutTimerFunc(timeStep,update,0);
+
 	glutPostRedisplay();
 	
 	/*
@@ -449,8 +471,9 @@ void display()
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 	glRotatef(90, 1, 0, 0);
     glRotatef(90, 0, 0, 1);
+
 	//glRotatef(angle, 0.f, 1.f ,0.f);  //Continuous rotation about the y-axis
-	if(modelRotn) glRotatef(-90, 1, 0, 0);		  //First, rotate the model about x-axis if needed.
+	//if(modelRotn) glRotatef(-90, 1, 0, 0);		  //First, rotate the model about x-axis if needed.
 
 	// scale the whole asset to fit into our view frustum 
 	float tmp = scene_max.x - scene_min.x;
@@ -465,6 +488,8 @@ void display()
 	// center the model
 	glTranslatef(-xc, -yc, -zc);
     render(scene, scene->mRootNode);
+    
+    
 	glutSwapBuffers();
 }
 
