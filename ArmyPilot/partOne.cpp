@@ -30,12 +30,7 @@ int currTick = 0;
 float timeStep = 50;
 
 
-
-
-
-std::vector<aiMesh> initalData;
-
-
+// Mesh Struture to hold initial values
 struct meshInit
 {
 	int mNumVertices;
@@ -59,10 +54,10 @@ bool loadModel(const char* fileName)
 {
 	scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality);
 	if(scene == NULL) exit(1);
-	printSceneInfo(scene);
-	printMeshInfo(scene);
-	printTreeInfo(scene->mRootNode);
-	printBoneInfo(scene);
+	//printSceneInfo(scene);
+	//printMeshInfo(scene);
+	//printTreeInfo(scene->mRootNode);
+	//printBoneInfo(scene);
 	//printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
 	get_bounding_box(scene, &scene_min, &scene_max);
 	
@@ -97,8 +92,6 @@ void loadGLTextures(const aiScene* scene)
 			ilEnable(IL_ORIGIN_SET);
 			ilOriginFunc(IL_ORIGIN_LOWER_LEFT);
 			
-			
-	
 
 			std::string x(path.data + 62); // "Remove weird location"
 			
@@ -130,6 +123,12 @@ void loadGLTextures(const aiScene* scene)
 
 }
 
+
+
+
+
+
+
 // ------A recursive function to traverse scene graph and render each mesh----------
 void render (const aiScene* sc, const aiNode* nd)
 {
@@ -137,7 +136,6 @@ void render (const aiScene* sc, const aiNode* nd)
 	aiMesh* mesh;
 	aiFace* face;
 	aiMaterial* mtl;
-	GLuint texId;
 	aiColor4D diffuse;
 	int meshIndex, materialIndex;
 
@@ -146,7 +144,7 @@ void render (const aiScene* sc, const aiNode* nd)
 	glMultMatrixf((float*)&m);   //Multiply by the transformation matrix for this node
 
 	// Draw all meshes assigned to this node
-	for (int n = 0; n < nd->mNumMeshes; n++)
+	for (uint n = 0; n < nd->mNumMeshes; n++)
 	{
 		meshIndex = nd->mMeshes[n];          //Get the mesh indices from the current node
 		mesh = scene->mMeshes[meshIndex];    //Using mesh index, get the mesh object
@@ -162,7 +160,6 @@ void render (const aiScene* sc, const aiNode* nd)
 			
 		}
 		
-	
 		if (replaceCol)
 			glColor4fv(materialCol);   //User-defined colour
 		else if (AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_DIFFUSE, &diffuse))  //Get material colour from model
@@ -170,9 +167,8 @@ void render (const aiScene* sc, const aiNode* nd)
 		else
 			glColor4fv(materialCol);   //Default material colour
 
-
 		//Get the polygons from each mesh and draw them
-		for (int k = 0; k < mesh->mNumFaces; k++)
+		for (uint k = 0; k < mesh->mNumFaces; k++)
 		{
 			face = &mesh->mFaces[k];
 			GLenum face_mode;
@@ -186,7 +182,7 @@ void render (const aiScene* sc, const aiNode* nd)
 			}
 
 			glBegin(face_mode);
-			for(int i = 0; i < face->mNumIndices; i++) {
+			for(uint i = 0; i < face->mNumIndices; i++) {
 				int vertexIndex = face->mIndices[i]; 
 				if(mesh->HasVertexColors(0))
 					glColor4fv((GLfloat*)&mesh->mColors[0][vertexIndex]);
@@ -202,18 +198,15 @@ void render (const aiScene* sc, const aiNode* nd)
 				{
 					glTexCoord2f(mesh->mTextureCoords[0][vertexIndex].x, mesh->mTextureCoords[0][vertexIndex].y);
 				}
-
-
+				
 			}
-
 			glEnd();
 		}
 	}
 
 	// Draw all children
-	for (int i = 0; i < nd->mNumChildren; i++)
+	for (uint i = 0; i < nd->mNumChildren; i++)
 		render(sc, nd->mChildren[i]);
-
 	glPopMatrix();
 }
 
@@ -245,8 +238,8 @@ void initialise()
 	
     initData = new meshInit[scene->mNumMeshes];
 
-		
-	for (int i = 0; i < scene->mNumMeshes; i++)
+	// Storing Inital Data of Vertices into structure
+	for (uint i = 0; i < scene->mNumMeshes; i++)
     {
 	
 		aiMesh *mesh = scene->mMeshes[i];
@@ -255,18 +248,17 @@ void initialise()
 	    (initData + i)->mVertices = new aiVector3D[mesh->mNumVertices];
 		(initData + i)->mNormals = new aiVector3D[mesh->mNumVertices];	
 		
-		for(int x = 0; x < mesh->mNumVertices; x++)
+		for(uint x = 0; x < mesh->mNumVertices; x++)
 		{
 			(initData + i)->mVertices[x] = mesh->mVertices[x];
 			(initData + i)->mNormals[x] = mesh->mNormals[x];
 			
-		}
-		
-		
+		}		
 	}
-	
 	tDuration = scene->mAnimations[0]->mDuration;
 }
+
+
 
 void updateModel(int tick)
 {
@@ -280,41 +272,93 @@ void updateModel(int tick)
 	// Step 1 Get the Transformation Matrix for each channel and replace the joint's
 	// transformation matrix using function from LAB
 	
-	for (int i = 0; i < anim->mNumChannels; i++)
+	for (uint i = 0; i < anim->mNumChannels; i++)
 	{
 				
 		matPos = aiMatrix4x4(); //Identity
 		matRot = aiMatrix4x4();
 		aiNodeAnim* ndAnim = anim->mChannels[i]; //Channel
-
-		if (ndAnim->mNumPositionKeys > 1)
-		{
-		   index = fmod(tick,anim->mDuration);
-
-			
-		}
+		
+		/*
+		if (ndAnim->mNumPositionKeys > 1) index = tick;
 		else index = 0;
 		aiVector3D posn = (ndAnim->mPositionKeys[index]).mValue;
 		matPos.Translation(posn, matPos);
-		if (ndAnim->mNumRotationKeys > 1) index = tick;
-		else index = 0;
+		*/
+		
+		// Position Interpolation
+		aiVector3D posn;
+		aiVector3D nextPosn;
+		aiVector3D prevPosn;
+		double prevTime;
+		double nextTime;
+		for(uint posFrame = 0; posFrame < ndAnim->mNumPositionKeys; posFrame ++)
+		{
+			if(tick >= ndAnim->mPositionKeys[posFrame].mTime)
+			{
+				prevPosn = ndAnim->mPositionKeys[posFrame].mValue;
+				prevTime = ndAnim->mPositionKeys[posFrame].mTime;
+				continue;
+				
+			}
+			nextPosn = ndAnim->mPositionKeys[posFrame].mValue;
+			nextTime = ndAnim->mPositionKeys[posFrame].mTime;
+			double timeFactor = (tick - prevTime)/(nextTime - prevTime) ;
+			posn = nextPosn + float(timeFactor) * (prevPosn - nextPosn);
+			matPos.Translation(posn, matPos);
+			break;
+				
+		}
+
+		
+		
+		/*
+		if (ndAnim->mNumRotationKeys > 1) index = tick; else index = 0;
 		aiQuaternion rotn = (ndAnim->mRotationKeys[index]).mValue;
 		matRot3 = rotn.GetMatrix();
 		matRot = aiMatrix4x4(matRot3);
+		*/
+		
+		
+		// Quaternion Interpolation
+		aiQuaternion rotn;
+		aiQuaternion prevRot;
+		aiQuaternion nextRot;
+		double rotPrevTime;
+		double rotNextTime;
+		for(uint rotFrame = 0; ndAnim->mNumRotationKeys;rotFrame++)
+		{
+			if(tick >= ndAnim->mRotationKeys[rotFrame].mTime)
+			{
+				prevRot = ndAnim->mRotationKeys[rotFrame].mValue;
+				rotPrevTime = ndAnim->mRotationKeys[rotFrame].mTime;
+				continue;
+			}
+			
+			nextRot = ndAnim->mRotationKeys[rotFrame].mValue;
+			rotNextTime = ndAnim->mRotationKeys[rotFrame].mTime;
+			double timeFactor2 = (tick - rotPrevTime)/(rotNextTime - rotPrevTime);
+			rotn.Interpolate(rotn,prevRot,nextRot,timeFactor2);
+			matRot3 = rotn.GetMatrix();
+			matRot = aiMatrix4x4(matRot3);
+			break;
+			
+		}
+
+		
 		matProd = matPos * matRot;
 		nd = scene->mRootNode->FindNode(ndAnim->mNodeName);
 		nd->mTransformation = matProd;
+	
 	}
 	
 	
-	for (int meshID = 0; meshID < scene->mNumMeshes; meshID ++)
+	for (uint meshID = 0; meshID < scene->mNumMeshes; meshID ++)
 	{
 		
 		aiMesh *mesh = scene->mMeshes[meshID];
 		
-		
-		
-		for (int i = 0; i < mesh->mNumBones; i ++)
+		for (uint i = 0; i < mesh->mNumBones; i ++)
 		{
 			
 			aiBone *bone = mesh->mBones[i];	
@@ -326,7 +370,7 @@ void updateModel(int tick)
 			
 			boneTransform = boneOffsetMatrix;
 			
-			// Step 3 get node parent transformations 
+			// Step 3 get node parent transformations and use them to create the transformation matrix
 			
 			while (node != nullptr)
             {
@@ -334,38 +378,33 @@ void updateModel(int tick)
 				node = node->mParent;
             }
             
-            aiMatrix4x4 boneTransformTranspose = boneTransform.Transpose();
+            // Transpose Matrix for Normal Transformation
+            
+            aiMatrix4x4 boneTransformTransposeInverse = boneTransform;
+            
+            boneTransformTransposeInverse.Transpose().Inverse();
             
             
             // Applying the transformations to each vertex
             
-            for(int k = 0; k < bone->mNumWeights; k++)
+            for(uint k = 0; k < bone->mNumWeights; k++)
             {
 				unsigned int vid = (bone->mWeights[k]).mVertexId;
-				// Inital data
+				// get Inital data
 				aiVector3D vert = (initData + meshID)->mVertices[vid];
 				aiVector3D norm = (initData + meshID)->mNormals[vid];
 				
 				aiMatrix3x3 aiVert3x3 = aiMatrix3x3(boneTransform);
-				aiMatrix3x3 aiNorm3x3 = aiMatrix3x3(boneTransformTranspose);
-	
-	
-				//mesh->mVertices[vid] =  mesh->mVertices[vid]  ;
-				//mesh->mNormals[vid] = mesh->mNormals[vid];
-		
-				mesh->mVertices[vid] =  (aiVert3x3 * vert)+ aiVector3D(boneTransform.a4 , boneTransform.b4 , boneTransform.c4)  ;
-				mesh->mNormals[vid] = (aiNorm3x3 * norm)+ aiVector3D(boneTransformTranspose.a4 , boneTransformTranspose.b4,boneTransformTranspose.c4);
+				aiMatrix3x3 aiNorm3x3 = aiMatrix3x3(boneTransformTransposeInverse);
+				// preform transformations on inital data and update the mesh.
+				mesh->mVertices[vid] =  ((aiVert3x3 * vert) + aiVector3D(boneTransform.a4 , boneTransform.b4 , boneTransform.c4)) ;
+				mesh->mNormals[vid] = ((aiNorm3x3 * norm) + aiVector3D(boneTransformTransposeInverse.a4 , boneTransformTransposeInverse.b4,boneTransformTransposeInverse.c4));
 
 			}		
-					
+				
 		}
 	
-	
 	}
-	
-	
-	
-	
 	
 }
 
@@ -406,7 +445,7 @@ void display()
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(0, 0, 3, 0, 0, -5, 0, 1, 0);
+	gluLookAt(0, 0, 5, 0, 0, -5, 0, 1, 0);
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 	glRotatef(90, 1, 0, 0);
     glRotatef(90, 0, 0, 1);
@@ -425,9 +464,7 @@ void display()
 	float zc = (scene_min.z + scene_max.z)*0.5;
 	// center the model
 	glTranslatef(-xc, -yc, -zc);
-
     render(scene, scene->mRootNode);
-
 	glutSwapBuffers();
 }
 

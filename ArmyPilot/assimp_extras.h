@@ -135,12 +135,12 @@ void printBoneInfo(const aiScene* scene)
 		float* mat = new float[16];
 		cout << "==================== Bone Data ===========================" << endl;
 		int nd = scene->mNumMeshes;
-		for (int n = 0; n < scene->mNumMeshes; ++n)
+		for (uint n = 0; n < scene->mNumMeshes; ++n)
 		{
 			aiMesh* mesh = scene->mMeshes[n];
 			if(mesh->HasBones())
 			{
-				for(int i = 0; i < mesh->mNumBones; i++)
+				for(uint i = 0; i < mesh->mNumBones; i++)
 				{
 					aiBone* bone = mesh->mBones[i];
 					cout << "Bone Name: " << (bone->mName).C_Str() << "   Mesh: " << n << "  nweights = " 
@@ -166,24 +166,24 @@ void printAnimInfo(const aiScene* scene)
 		cout << "==================== Animation Data ===========================" << endl;
 		cout << "Number of animations = " << scene->mNumAnimations << endl;
 
-		for (int n = 0; n < scene->mNumAnimations; ++n)
+		for (uint n = 0; n < scene->mNumAnimations; ++n)
 		{
 			aiAnimation* anim = scene->mAnimations[n];
 			cout << " --- Anim " << n << ":  Name = " << (anim->mName).C_Str() << 
 				"  nchanls = " << anim->mNumChannels << " nticks = " << anim->mTicksPerSecond <<
 				"  duration (ticks) = " << anim->mDuration << endl;
-			for(int i = 0; i < anim->mNumChannels; i++)
+			for(uint i = 0; i < anim->mNumChannels; i++)
 			{
 				aiNodeAnim* ndAnim = anim->mChannels[i];
 				cout << "     Channel " << i << ": nodeName = " << (ndAnim->mNodeName).C_Str()  << " nposkeys = " << ndAnim->mNumPositionKeys << "  nrotKeys = " <<
 					ndAnim->mNumRotationKeys << " nsclKeys = " << ndAnim->mNumScalingKeys << endl;
-				for(int k = 0; k < ndAnim->mNumPositionKeys; k++)
+				for(uint k = 0; k < ndAnim->mNumPositionKeys; k++)
 				{
 					aiVectorKey posKey = ndAnim->mPositionKeys[k];    //Note: Does not return a pointer
 					pos = (float*)&posKey.mValue;
 					cout <<  "        posKey " << k << ":  Time = " << posKey.mTime << " Value = " << pos[0] << " " << pos[1] << " " << pos[2] << endl;
 				}
-				for(int k = 0; k < ndAnim->mNumRotationKeys; k++)
+				for(uint k = 0; k < ndAnim->mNumRotationKeys; k++)
 				{
 					aiQuatKey rotnKey = ndAnim->mRotationKeys[k];    //Note: Does not return a pointer
 					quat = (float*)&rotnKey.mValue;
