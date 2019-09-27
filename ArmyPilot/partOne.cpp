@@ -32,6 +32,8 @@ aiVector3D offset = aiVector3D(1.0f,1.0f,1.0f);
 double player_x = 10;
 double player_z = 0;
 double zoomfactor = 1;
+double floorMoveSpeed = 0.1;
+
 
 // Mesh Struture to hold initial values
 struct meshInit
@@ -47,7 +49,7 @@ meshInit* initData;
 
 
 //------------Modify the following as needed----------------------
-float materialCol[4] = { 1.0, 1.0, 1.0, 1 };   //Default material colour (not used if model's colour is available)
+float materialCol[4] = { 0.0f, 0.0f, 0.0f, 0.0f };   //Default material colour (not used if model's colour is available)
 bool replaceCol = false;					   //Change to 'true' to set the model's colour to the above colour
 bool twoSidedLight = false;					   //Change to 'true' to enable two-sided lighting
 
@@ -56,7 +58,7 @@ bool loadModel(const char* fileName)
 {
 	scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality);
 	if(scene == NULL) exit(1);
-	//printSceneInfo(scene);
+	printSceneInfo(scene);
 	//printMeshInfo(scene);
 	//printTreeInfo(scene->mRootNode);
 	//printBoneInfo(scene);
@@ -231,7 +233,7 @@ void initialise()
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(35, 1, 1.0, 1000.0);
-	
+		
     initData = new meshInit[scene->mNumMeshes];
 
 	// Storing Inital Data of Vertices into structure
@@ -459,8 +461,7 @@ void keyboard(unsigned char key, int x, int y)
 void drawFloorPlane()
 {
     float white[4] = {0., 1., 1.,1.0};
-    float black[4] = {0};
-        glDisable(GL_TEXTURE_2D);
+    glDisable(GL_TEXTURE_2D);
 
 
     glColor4f(0.0, 0.72, 0.56, 1.0);  //The floor is gray in colour
@@ -470,18 +471,24 @@ void drawFloorPlane()
 
     glBegin(GL_QUADS);
     glNormal3f(0.0, .0, -1.0);
-    for(int i = -1000; i < 1000; i+=2)
-    {
-        for(int j = -1000;  j < 1000; j+=2)
-        {
-            glVertex3f(i, j,-0.1);
-            glVertex3f(i, j+2,-0.1);
-            glVertex3f(i+2, j+2,-0.1);
-            glVertex3f(i+2, j,-0.1);
-            
+    floorMoveSpeed += 10;
+	
+	for(int i = 0 ; i < 500 ; i++)
+	{
+	
+	if(i % 2 == 0)
+	{
+		    glColor4f(1.0, 0.2, 0.56, 1.0);  //The floor is gray in colour
 
-        }
-    }
+	}
+	else{    glColor4f(0.0, 0.72, 0.56, 1.0); }
+	
+    glVertex3f(-1000 + (i * 200) - floorMoveSpeed,2000 ,2.5);
+    glVertex3f(-1000 +  (i * 200) - floorMoveSpeed,-2000 ,2.5);
+    glVertex3f(-800 + (i * 200) - floorMoveSpeed,-2000 ,2.5);
+    glVertex3f(-800  + (i * 200) - floorMoveSpeed, 2000,2.5);
+            
+	}
 
     glMaterialfv(GL_FRONT, GL_SPECULAR, white);
     glEnd();
