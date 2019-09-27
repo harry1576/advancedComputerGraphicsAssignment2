@@ -30,6 +30,7 @@ int currTick = 0;
 float timeStep = 50;
 aiVector3D offset = aiVector3D(1.0f,1.0f,1.0f);
 
+
 // Mesh Struture to hold initial values
 struct meshInit
 {
@@ -46,7 +47,6 @@ meshInit* initData;
 //------------Modify the following as needed----------------------
 float materialCol[4] = { 1.0, 1.0, 1.0, 1 };   //Default material colour (not used if model's colour is available)
 bool replaceCol = false;					   //Change to 'true' to set the model's colour to the above colour
-float lightPosn[4] = { 0, 50, 50, 1 };         //Default light's position
 bool twoSidedLight = false;					   //Change to 'true' to enable two-sided lighting
 
 //-------Loads model data from file and creates a scene object----------
@@ -122,12 +122,6 @@ void loadGLTextures(const aiScene* scene)
 	}  //loop for material
 
 }
-
-
-
-
-
-
 
 // ------A recursive function to traverse scene graph and render each mesh----------
 void render (const aiScene* sc, const aiNode* nd)
@@ -213,7 +207,7 @@ void render (const aiScene* sc, const aiNode* nd)
 //--------------------OpenGL initialization------------------------
 void initialise()
 {
-	float ambient[4] = { 0.2, 0.2, 0.2, 1.0 };  //Ambient light
+	float ambient[4] = { 0.8, 0.8, 0.8, 1.0 };  //Ambient light
 	float white[4] = { 1, 1, 1, 1 };			//Light's colour
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_LIGHTING);
@@ -458,17 +452,75 @@ void keyboard(unsigned char key, int x, int y)
 	glutPostRedisplay();
 }
 
+
+
+void drawFloorPlane()
+{
+    float white[4] = {0., 1., 1.,1.0};
+    float black[4] = {0};
+        glDisable(GL_TEXTURE_2D);
+
+
+    glColor4f(0.78, 0.72, 0.56, 1.0);  //The floor is gray in colour
+    glMaterialfv(GL_FRONT, GL_SPECULAR, white);
+    //The floor is made up of several tiny squares on a 200x200 grid. Each square has a unit size.
+
+
+    glBegin(GL_QUADS);
+    glNormal3f(0.0, .0, -1.0);
+    for(int i = -1000; i < 1000; i+=2)
+    {
+        for(int j = -1000;  j < 1000; j+=2)
+        {
+            glVertex3f(i, j,50);
+            glVertex3f(i, j+2,50);
+            glVertex3f(i+2, j+2,50);
+            glVertex3f(i+2, j,50);
+            
+
+        }
+    }
+
+    glMaterialfv(GL_FRONT, GL_SPECULAR, white);
+    glEnd();
+
+}
+
+ void special(int key, int x, int y)
+ {
+  if(key == GLUT_KEY_LEFT)
+    {
+        angle+= 5;
+    }
+    else if(key == GLUT_KEY_RIGHT)
+    {
+        angle-= 5;
+
+    }
+}
+
+
+
+
 //------The main display function---------
 //----The model is first drawn using a display list so that all GL commands are
 //    stored for subsequent display updates.
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_LIGHTING);
+	
+	  // glDisable ( GL_LIGHTING ) ;
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+	float lightPosn[4] = { 50, 50, 50, 1 };         //Default light's position
+
 	gluLookAt(0, 0, 5, 0, 0, -5, 0, 1, 0);
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
+	
+	glRotatef(angle, 0, 1, 0);
+
 	glRotatef(90, 1, 0, 0);
     glRotatef(90, 0, 0, 1);
 
@@ -486,9 +538,11 @@ void display()
 	float yc = (scene_min.y + scene_max.y)*0.5;
 	float zc = (scene_min.z + scene_max.z)*0.5;
 	// center the model
+	
 	glTranslatef(-xc, -yc, -zc);
     render(scene, scene->mRootNode);
-    
+    	drawFloorPlane();
+
     
 	glutSwapBuffers();
 }
@@ -508,6 +562,7 @@ int main(int argc, char** argv)
 	glutDisplayFunc(display);
 	glutTimerFunc(timeStep, update, 0);
 	glutKeyboardFunc(keyboard);
+	glutSpecialFunc(special);
 	glutMainLoop();
 
 	aiReleaseImport(scene);
