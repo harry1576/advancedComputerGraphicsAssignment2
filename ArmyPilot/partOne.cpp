@@ -21,7 +21,7 @@ using namespace std;
 
 //----------Globals----------------------------
 const aiScene* scene = NULL;
-float angle = 0;
+double angle = 0;
 aiVector3D scene_min, scene_max, scene_center;
 bool modelRotn = false;
 std::map<int, int> texIdMap;
@@ -29,7 +29,9 @@ int tDuration;
 int currTick = 0;
 float timeStep = 50;
 aiVector3D offset = aiVector3D(1.0f,1.0f,1.0f);
-
+double player_x = 10;
+double player_z = 0;
+double zoomfactor = 1;
 
 // Mesh Struture to hold initial values
 struct meshInit
@@ -461,7 +463,7 @@ void drawFloorPlane()
         glDisable(GL_TEXTURE_2D);
 
 
-    glColor4f(0.78, 0.72, 0.56, 1.0);  //The floor is gray in colour
+    glColor4f(0.0, 0.72, 0.56, 1.0);  //The floor is gray in colour
     glMaterialfv(GL_FRONT, GL_SPECULAR, white);
     //The floor is made up of several tiny squares on a 200x200 grid. Each square has a unit size.
 
@@ -472,10 +474,10 @@ void drawFloorPlane()
     {
         for(int j = -1000;  j < 1000; j+=2)
         {
-            glVertex3f(i, j,50);
-            glVertex3f(i, j+2,50);
-            glVertex3f(i+2, j+2,50);
-            glVertex3f(i+2, j,50);
+            glVertex3f(i, j,-0.1);
+            glVertex3f(i, j+2,-0.1);
+            glVertex3f(i+2, j+2,-0.1);
+            glVertex3f(i+2, j,-0.1);
             
 
         }
@@ -495,8 +497,26 @@ void drawFloorPlane()
     else if(key == GLUT_KEY_RIGHT)
     {
         angle-= 5;
+    }
+    else if(key == GLUT_KEY_DOWN)
+    {
+		if (zoomfactor < 1)
+		{zoomfactor += 0.05;
+	glMatrixMode(GL_PROJECTION); glLoadIdentity(); gluPerspective(35.0* zoomfactor, 1.0, 1.0, 1000.0 );}
 
     }
+    else if(key == GLUT_KEY_UP)
+    {
+		if (zoomfactor > 0.3)
+		{zoomfactor -= 0.05;
+
+	glMatrixMode(GL_PROJECTION); glLoadIdentity(); gluPerspective(35.0 * zoomfactor, 1.0, 1.0, 1000.0 );}
+    }
+    //std::cout << "Zoom Factor" << zoomfactor << endl;
+
+
+
+
 }
 
 
@@ -516,7 +536,7 @@ void display()
 	glLoadIdentity();
 	float lightPosn[4] = { 50, 50, 50, 1 };         //Default light's position
 
-	gluLookAt(0, 0, 5, 0, 0, -5, 0, 1, 0);
+	gluLookAt(player_z,0, player_x, 0, 0, 0, 0, 1, 0);
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 	
 	glRotatef(angle, 0, 1, 0);
@@ -541,7 +561,7 @@ void display()
 	
 	glTranslatef(-xc, -yc, -zc);
     render(scene, scene->mRootNode);
-    	drawFloorPlane();
+    drawFloorPlane();
 
     
 	glutSwapBuffers();
