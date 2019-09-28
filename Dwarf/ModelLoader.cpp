@@ -37,7 +37,7 @@ float timeStep = 50; //Animation time step = 50 m.sec				   //Change to 'true' t
 //-------Loads model data from file and creates a scene object----------
 bool loadModel(const char* fileName)
 {
-	scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality);
+	scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality|aiProcess_Debone);
 	if(scene == NULL) exit(1);
 	printSceneInfo(scene);
 	printMeshInfo(scene);

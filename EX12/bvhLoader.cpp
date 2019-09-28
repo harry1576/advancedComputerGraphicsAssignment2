@@ -203,7 +203,7 @@ void initialise()
 	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
 	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50);
 	glColor4fv(materialCol);
-	loadModel("Walk.bvh");			//<<<-------------Specify input file name here
+	loadModel("run.fbx");			//<<<-------------Specify input file name here
 	loadGLTextures(scene);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();

@@ -258,8 +258,8 @@ void update(int value)
 	
 	if(currTick < tDuration)
 	{
-		updateNodeMatrices(currTick);
-		glutTimerFunc(timeStep,update,0);
+		//updateNodeMatrices(currTick);
+		//glutTimerFunc(timeStep,update,0);
 		currTick ++;
 	}
 	glutPostRedisplay();
@@ -292,7 +292,7 @@ void display()
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 
 	glRotatef(angle, 0.f, 1.f ,0.f);  //Continuous rotation about the y-axis
-	if(modelRotn) glRotatef(-90, 1, 0, 0);		  //First, rotate the model about x-axis if needed.
+	//if(modelRotn) glRotatef(-90, 1, 0, 0);		  //First, rotate the model about x-axis if needed.
 
 	// scale the whole asset to fit into our view frustum 
 	float tmp = scene_max.x - scene_min.x;
