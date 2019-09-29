@@ -537,11 +537,9 @@ void drawFloorPlane()
     float white[4] = {0., 1., 1.,1.0};
     glDisable(GL_TEXTURE_2D);
 
-
     glColor4f(0.0, 0.72, 0.56, 1.0);  //The floor is gray in colour
     glMaterialfv(GL_FRONT, GL_SPECULAR, white);
     //The floor is made up of several tiny squares on a 200x200 grid. Each square has a unit size.
-
 
     glBegin(GL_QUADS);
     glNormal3f(0.0, .0, -1.0);
