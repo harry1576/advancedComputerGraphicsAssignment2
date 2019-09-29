@@ -21,13 +21,15 @@ using namespace std;
 
 //----------Globals----------------------------
 const aiScene* scene = NULL;
+const aiScene* animation = NULL;
+
 double angle = 0;
 aiVector3D scene_min, scene_max, scene_center;
 bool modelRotn = false;
 std::map<int, int> texIdMap;
 int tDuration;
 int currTick = 0;
-float timeStep = 18;
+float timeStep = 50;
 aiVector3D offset = aiVector3D(1.0f,1.0f,1.0f);
 double player_x = 10;
 double player_z = 0;
@@ -54,15 +56,24 @@ bool replaceCol = false;					   //Change to 'true' to set the model's colour to 
 bool twoSidedLight = false;					   //Change to 'true' to enable two-sided lighting
 
 //-------Loads model data from file and creates a scene object----------
-bool loadModel(const char* fileName)
+bool loadModel(const char* fileName,int fileNumber)
 {
-	scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality);
+	if(fileNumber == 1)
+	{
+		scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality| aiProcess_Debone);
+	}
+	if(fileNumber == 2)
+	{
+		animation = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality);
+	}
+	
 	if(scene == NULL) exit(1);
-	printSceneInfo(scene);
+	//printSceneInfo(scene);
 	//printMeshInfo(scene);
 	//printTreeInfo(scene->mRootNode);
 	//printBoneInfo(scene);
-	//printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
+	printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
+	//printAnimInfo(animation);  //WARNING:  This may generate a lengthy output if the model has animation data
 	get_bounding_box(scene, &scene_min, &scene_max);
 	
 	return true;
@@ -97,9 +108,8 @@ void loadGLTextures(const aiScene* scene)
 			ilOriginFunc(IL_ORIGIN_LOWER_LEFT);
 			
 
-			std::string x(path.data + 62); // "Remove weird location"
 			
-			if (ilLoadImage((ILstring)x.c_str()))   //if success
+			if (ilLoadImage((ILstring)path.data))  
 			{
 				/* Convert image to RGBA */
 				ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE);
@@ -112,7 +122,7 @@ void loadGLTextures(const aiScene* scene)
 					ilGetInteger(IL_IMAGE_HEIGHT), 0, GL_RGBA, GL_UNSIGNED_BYTE,
 					ilGetData());
 				glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-				cout << "Texture:" << x.c_str() << " successfully loaded." << endl;
+				cout << "Texture:" << path.data << " successfully loaded." << endl;
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 				glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 				glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
@@ -228,7 +238,10 @@ void initialise()
 	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
 	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50);
 	glColor4fv(materialCol);
-	loadModel("ArmyPilot.x");			//<<<-------------Specify input file name here
+	loadModel("dwarf.x",1);	
+	loadModel("avatar_walk.bvh",2);	
+
+	//avatar_walk.bvh		//<<<-------------Specify input file name here
 	loadGLTextures(scene);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -258,27 +271,63 @@ void initialise()
 
 
 
-void updateModel(int tick)
+void updateModel(double tick)
 {
 	int index;
+	int tick2 = tick/15;
 	aiAnimation* anim = scene->mAnimations[0];
+	aiAnimation* anim2 = animation->mAnimations[0];
+
+	double scene2animticks = anim->mTicksPerSecond/anim2->mTicksPerSecond;
+
+
 	aiMatrix4x4 matPos, matRot, matProd;
 	aiMatrix3x3 matRot3;
 	aiNode* nd;
 	aiMatrix4x4 boneTransform;
-	
+	aiNodeAnim* ndAnim ;
 	// Step 1 Get the Transformation Matrix for each channel and replace the joint's
 	// transformation matrix using function from LAB
+	
+	
+	//aiNodeAnim* rKnee = anim2->mChannels[0]; //Channel
+
 	
 	for (uint i = 1; i < anim->mNumChannels; i++)
 	{
 				
 		matPos = aiMatrix4x4(); //Identity
 		matRot = aiMatrix4x4();
-		aiNodeAnim* ndAnim = anim->mChannels[i]; //Channel
+		ndAnim = anim->mChannels[i]; //Channel
+
+		
+
+		/*
+		if(anim2->mNumChannels > anim->mNumChannels)
+		{
+			for(uint q = 0; q < anim->mNumChannels; q++)
+			{
+				if(anim->mChannels[q]->mNodeName == anim2->mChannels[q]->mNodeName)
+				{
+					std::cout << "Zoom Factor" << endl;
+				}
+			}
+		}
+		
+		if(anim2->mNumChannels < anim->mNumChannels)
+		{
+			for(uint z = 0; z < anim2->mNumChannels; z++)
+			{
+				if(anim->mChannels[z]->mNodeName == anim2->mChannels[z]->mNodeName)
+				{
+					std::cout << "Zoom Factor" << endl;
+				}
+			}
+		}
+		*/
 		
 		
-		
+
 		/*
 		if (ndAnim->mNumPositionKeys > 1) index = tick;
 		else index = 0;
@@ -317,15 +366,32 @@ void updateModel(int tick)
 			matPos.Translation(posn, matPos);
 		}
 		
-		
-		//offset = offset * aiMatrix3x3(matPos);	
-		/*
-		if (ndAnim->mNumRotationKeys > 1) index = tick; else index = 0;
-		aiQuaternion rotn = (ndAnim->mRotationKeys[index]).mValue;
-		matRot3 = rotn.GetMatrix();
-		matRot = aiMatrix4x4(matRot3);
-		*/
-		
+		if(i == 2 or i == 6)
+		{
+			ndAnim = anim2->mChannels[0]; //Channel
+			tick = scene2animticks*tick;
+		}
+		if(i == 3)
+		{
+			ndAnim = anim2->mChannels[15]; //Channel
+			tick = scene2animticks*tick;	
+		}
+		if(i == 4)
+		{
+			ndAnim = anim2->mChannels[16]; //Channel
+			tick = scene2animticks*tick;	
+		}
+		if(i == 7)
+		{
+			ndAnim = anim2->mChannels[18]; //Channel
+			tick = scene2animticks*tick;	
+		}
+		if(i == 8)
+		{
+			ndAnim = anim2->mChannels[19]; //Channel
+			tick = scene2animticks*tick;	
+		}
+	
 		
 		// Quaternion Interpolation
 		aiQuaternion rotn;
@@ -346,12 +412,18 @@ void updateModel(int tick)
 			rotNextTime = ndAnim->mRotationKeys[rotFrame].mTime;
 			double timeFactor2 = (tick - rotPrevTime)/(rotNextTime - rotPrevTime);
 			rotn.Interpolate(rotn,prevRot,nextRot,timeFactor2);
+			/*
+			if(rotFrame == 1)
+			{
+				rotn = ndAnim2->mRotationKeys[rotFrame].mValue;
+
+			}
+			*/
 			matRot3 = rotn.GetMatrix();
 			matRot = aiMatrix4x4(matRot3);
 			break;
 			
 		}
-	
 	
 		if(ndAnim->mNumRotationKeys == 1)
 		{
@@ -360,14 +432,23 @@ void updateModel(int tick)
 			matRot = aiMatrix4x4(matRot3);
 		}
 		
+		// change back to other channel animation
+				
+		if(i == 2 or i == 3 or i == 4 or i ==6 or i == 7 or i == 8)
+		{
+			ndAnim = anim->mChannels[i]; //Channe
+			tick = tick * (1/scene2animticks);
+
+		}
 		
 		matProd = matPos * matRot;
 		nd = scene->mRootNode->FindNode(ndAnim->mNodeName);
 		nd->mTransformation = matProd;
-	
+
+
 	}
 	
-	
+
 	for (uint meshID = 0; meshID < scene->mNumMeshes; meshID ++)
 	{
 		
@@ -375,7 +456,7 @@ void updateModel(int tick)
 		
 		for (uint i = 0; i < mesh->mNumBones; i ++)
 		{
-			
+
 			aiBone *bone = mesh->mBones[i];	
 		    aiNode *node = scene->mRootNode->FindNode(bone->mName);
 
@@ -420,6 +501,7 @@ void updateModel(int tick)
 		}
 	
 	}
+
 	
 }
 
@@ -548,8 +630,8 @@ void display()
 	
 	glRotatef(angle, 0, 1, 0);
 
-	glRotatef(90, 1, 0, 0);
-    glRotatef(90, 0, 0, 1);
+	//glRotatef(90, 1, 0, 0);
+   // glRotatef(90, 0, 0, 1);
 
 	//glRotatef(angle, 0.f, 1.f ,0.f);  //Continuous rotation about the y-axis
 	//if(modelRotn) glRotatef(-90, 1, 0, 0);		  //First, rotate the model about x-axis if needed.
@@ -568,7 +650,7 @@ void display()
 	
 	glTranslatef(-xc, -yc, -zc);
     render(scene, scene->mRootNode);
-    drawFloorPlane();
+    //drawFloorPlane();
 
     
 	glutSwapBuffers();

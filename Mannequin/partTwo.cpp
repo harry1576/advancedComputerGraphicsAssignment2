@@ -29,7 +29,7 @@ bool modelRotn = false;
 std::map<int, int> texIdMap;
 int tDuration;
 int currTick = 0;
-float timeStep = 50;
+float timeStep = 40;
 aiVector3D offset = aiVector3D(1.0f,1.0f,1.0f);
 double player_x = 10;
 double player_z = 0;
@@ -67,11 +67,11 @@ bool loadModel(const char* fileName, int key)
 	animation = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality);
 	}
 	if(scene == NULL) exit(1);
-	printSceneInfo(scene);
+	//printSceneInfo(scene);
 	//printMeshInfo(scene);
 	//printTreeInfo(scene->mRootNode);
 	//printBoneInfo(scene);
-	printAnimInfo(animation);  //WARNING:  This may generate a lengthy output if the model has animation data
+	//printAnimInfo(animation);  //WARNING:  This may generate a lengthy output if the model has animation data
 	get_bounding_box(scene, &scene_min, &scene_max);
 	
 	return true;
@@ -295,29 +295,7 @@ void updateModel(int tick)
 		
 		// Position Interpolation
 		aiVector3D posn;
-		aiVector3D nextPosn;
-		aiVector3D prevPosn;
-		double prevTime;
-		double nextTime;
-		for(uint posFrame = 0; posFrame < ndAnim->mNumPositionKeys; posFrame ++)
-		{
-		
-			if(tick >= ndAnim->mPositionKeys[posFrame].mTime)
-			{
-				prevPosn = ndAnim->mPositionKeys[posFrame].mValue;
-				prevTime = ndAnim->mPositionKeys[posFrame].mTime;
-				continue;
-				
-			}
-			nextPosn = ndAnim->mPositionKeys[posFrame].mValue;
-			nextTime = ndAnim->mPositionKeys[posFrame].mTime;
-			double timeFactor = (tick - prevTime)/(nextTime - prevTime) ;
-			posn = nextPosn + float(timeFactor) * (prevPosn - nextPosn);
-			matPos.Translation(posn, matPos);
-			break;
-				
-		}
-		
+
 		if(ndAnim->mNumPositionKeys == 1)
 		{
 			posn = ndAnim->mPositionKeys[0].mValue;
@@ -335,39 +313,31 @@ void updateModel(int tick)
 		
 		
 		
-		if (ndAnim->mNumPositionKeys > 1)
-        {
-			matPos = aiMatrix4x4();
 
-
-        } 
-		
-		
 		// Quaternion Interpolation
 		aiQuaternion rotn;
 		aiQuaternion prevRot;
 		aiQuaternion nextRot;
 		double rotPrevTime;
 		double rotNextTime;
-		for(uint rotFrame = 0; ndAnim->mNumRotationKeys;rotFrame++)
+		uint rotFrame;
+		for(rotFrame = 0;rotFrame < ndAnim->mNumRotationKeys-1;)
 		{
 			if(tick >= ndAnim->mRotationKeys[rotFrame].mTime)
 			{
 				prevRot = ndAnim->mRotationKeys[rotFrame].mValue;
 				rotPrevTime = ndAnim->mRotationKeys[rotFrame].mTime;
-				continue;
 			}
-			
-			nextRot = ndAnim->mRotationKeys[rotFrame].mValue;
-			rotNextTime = ndAnim->mRotationKeys[rotFrame].mTime;
-			double timeFactor2 = (tick - rotPrevTime)/(rotNextTime - rotPrevTime);
-			rotn.Interpolate(rotn,prevRot,nextRot,timeFactor2);
-			matRot3 = rotn.GetMatrix();
-			matRot = aiMatrix4x4(matRot3);
-			break;
-			
+			rotFrame++;
+
+
 		}
-	
+		nextRot = ndAnim->mRotationKeys[rotFrame].mValue;
+		rotNextTime = ndAnim->mRotationKeys[rotFrame].mTime;
+		double timeFactor2 = (tick - rotPrevTime)/(rotNextTime - rotPrevTime);
+		rotn.Interpolate(rotn,prevRot,nextRot,timeFactor2);
+		matRot3 = rotn.GetMatrix();
+		matRot = aiMatrix4x4(matRot3);
 	
 		if(ndAnim->mNumRotationKeys == 1)
 		{
