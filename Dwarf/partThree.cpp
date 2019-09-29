@@ -34,7 +34,7 @@ aiVector3D offset = aiVector3D(1.0f,1.0f,1.0f);
 double player_x = 10;
 double player_z = 0;
 double zoomfactor = 1;
-double floorMoveSpeed = 0.1;
+double floorMoveSpeed = 0.00001;
 
 
 // Mesh Struture to hold initial values
@@ -73,7 +73,7 @@ bool loadModel(const char* fileName,int fileNumber)
 	//printTreeInfo(scene->mRootNode);
 	//printBoneInfo(scene);
 	printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
-	//printAnimInfo(animation);  //WARNING:  This may generate a lengthy output if the model has animation data
+	printAnimInfo(animation);  //WARNING:  This may generate a lengthy output if the model has animation data
 	get_bounding_box(scene, &scene_min, &scene_max);
 	
 	return true;
@@ -278,9 +278,6 @@ void updateModel(double tick)
 	aiAnimation* anim = scene->mAnimations[0];
 	aiAnimation* anim2 = animation->mAnimations[0];
 
-	double scene2animticks = anim->mTicksPerSecond/anim2->mTicksPerSecond;
-
-
 	aiMatrix4x4 matPos, matRot, matProd;
 	aiMatrix3x3 matRot3;
 	aiNode* nd;
@@ -293,9 +290,11 @@ void updateModel(double tick)
 	//aiNodeAnim* rKnee = anim2->mChannels[0]; //Channel
 
 	
-	for (uint i = 1; i < anim->mNumChannels; i++)
+	for (uint i = 0; i < anim->mNumChannels; i++)
 	{
-				
+		if (i==1)
+		{ i = 2;}
+		
 		matPos = aiMatrix4x4(); //Identity
 		matRot = aiMatrix4x4();
 		ndAnim = anim->mChannels[i]; //Channel
@@ -366,30 +365,35 @@ void updateModel(double tick)
 			matPos.Translation(posn, matPos);
 		}
 		
-		if(i == 2 or i == 6)
+		if(i == 2)// lefthips
 		{
-			ndAnim = anim2->mChannels[0]; //Channel
-			tick = scene2animticks*tick;
+			ndAnim = anim2->mChannels[15];//Channel
+			tick = 0.2364*tick;	
 		}
-		if(i == 3)
+		if(i == 3) //lknee
 		{
-			ndAnim = anim2->mChannels[15]; //Channel
-			tick = scene2animticks*tick;	
+			ndAnim = anim2->mChannels[16];//Channel
+			tick = 0.2364*tick;	
 		}
-		if(i == 4)
+		if(i == 4)// lankle
 		{
-			ndAnim = anim2->mChannels[16]; //Channel
-			tick = scene2animticks*tick;	
+			ndAnim = anim2->mChannels[17];//Channel
+			tick = 0.2364*tick;	
 		}
-		if(i == 7)
+		if(i == 6) //rthigh
 		{
-			ndAnim = anim2->mChannels[18]; //Channel
-			tick = scene2animticks*tick;	
+			ndAnim = anim2->mChannels[18];//Channel
+			tick = 0.2364*tick;	
+		}		
+		if(i == 7) //rknee
+		{
+			ndAnim = anim2->mChannels[19];//Channel
+			tick = 0.2364*tick;	
 		}
-		if(i == 8)
+		if(i == 8) //rankle
 		{
-			ndAnim = anim2->mChannels[19]; //Channel
-			tick = scene2animticks*tick;	
+			ndAnim = anim2->mChannels[20];//Channel
+			tick = 0.2364*tick;	
 		}
 	
 		
@@ -437,23 +441,19 @@ void updateModel(double tick)
 		if(i == 2 or i == 3 or i == 4 or i ==6 or i == 7 or i == 8)
 		{
 			ndAnim = anim->mChannels[i]; //Channe
-			tick = tick * (1/scene2animticks);
+			tick =(1/ 0.2364)*tick;	
 
 		}
 		
 		matProd = matPos * matRot;
 		nd = scene->mRootNode->FindNode(ndAnim->mNodeName);
 		nd->mTransformation = matProd;
-
-
 	}
 	
-
 	for (uint meshID = 0; meshID < scene->mNumMeshes; meshID ++)
 	{
 		
-		aiMesh *mesh = scene->mMeshes[meshID];
-		
+		aiMesh *mesh = scene->mMeshes[meshID];	
 		for (uint i = 0; i < mesh->mNumBones; i ++)
 		{
 
@@ -462,8 +462,6 @@ void updateModel(double tick)
 
 			// Step 2 Use the Offset Matrices of bones to transform mesh vertices to node space
 			aiMatrix4x4 boneOffsetMatrix = bone->mOffsetMatrix;
-		
-			
 			boneTransform = boneOffsetMatrix;
 			
 			// Step 3 get node parent transformations and use them to create the transformation matrix
@@ -477,7 +475,6 @@ void updateModel(double tick)
             // Transpose Matrix for Normal Transformation
             
             aiMatrix4x4 boneTransformTransposeInverse = boneTransform;
-            
             boneTransformTransposeInverse.Transpose().Inverse();
             
             
@@ -495,14 +492,9 @@ void updateModel(double tick)
 				// preform transformations on inital data and update the mesh.
 				mesh->mVertices[vid] =  ((aiVert3x3 * vert) + aiVector3D(boneTransform.a4 , boneTransform.b4 , boneTransform.c4)) ;
 				mesh->mNormals[vid] = ((aiNorm3x3 * norm) + aiVector3D(boneTransformTransposeInverse.a4 , boneTransformTransposeInverse.b4,boneTransformTransposeInverse.c4));
-
-			}		
-				
+			}				
 		}
-	
 	}
-
-	
 }
 
 
@@ -553,7 +545,7 @@ void drawFloorPlane()
 
     glBegin(GL_QUADS);
     glNormal3f(0.0, .0, -1.0);
-    floorMoveSpeed += 10;
+    floorMoveSpeed += 1.1;
 	
 	for(int i = 0 ; i < 500 ; i++)
 	{
@@ -579,33 +571,29 @@ void drawFloorPlane()
 
  void special(int key, int x, int y)
  {
-  if(key == GLUT_KEY_LEFT)
-    {
-        angle+= 5;
-    }
-    else if(key == GLUT_KEY_RIGHT)
-    {
-        angle-= 5;
-    }
-    else if(key == GLUT_KEY_DOWN)
-    {
-		if (zoomfactor < 1)
-		{zoomfactor += 0.05;
-	glMatrixMode(GL_PROJECTION); glLoadIdentity(); gluPerspective(35.0* zoomfactor, 1.0, 1.0, 1000.0 );}
+	  if(key == GLUT_KEY_LEFT)
+		{
+			angle+= 5;
+		}
+		else if(key == GLUT_KEY_RIGHT)
+		{
+			angle-= 5;
+		}
+		else if(key == GLUT_KEY_DOWN)
+		{
+			if (zoomfactor < 1)
+			{zoomfactor += 0.05;
+		glMatrixMode(GL_PROJECTION); glLoadIdentity(); gluPerspective(35.0* zoomfactor, 1.0, 1.0, 1000.0 );}
 
-    }
-    else if(key == GLUT_KEY_UP)
-    {
-		if (zoomfactor > 0.3)
-		{zoomfactor -= 0.05;
+		}
+		else if(key == GLUT_KEY_UP)
+		{
+			if (zoomfactor > 0.3)
+			{zoomfactor -= 0.05;
 
-	glMatrixMode(GL_PROJECTION); glLoadIdentity(); gluPerspective(35.0 * zoomfactor, 1.0, 1.0, 1000.0 );}
-    }
-    //std::cout << "Zoom Factor" << zoomfactor << endl;
-
-
-
-
+		glMatrixMode(GL_PROJECTION); glLoadIdentity(); gluPerspective(35.0 * zoomfactor, 1.0, 1.0, 1000.0 );}
+		}
+		//std::cout << "Zoom Factor" << zoomfactor << endl;
 }
 
 
@@ -650,9 +638,10 @@ void display()
 	
 	glTranslatef(-xc, -yc, -zc);
     render(scene, scene->mRootNode);
-    //drawFloorPlane();
+    glRotatef(-90, 0, 1,0 );
+    glRotatef(90, 1, 0, 0);
 
-    
+    drawFloorPlane();
 	glutSwapBuffers();
 }
 
