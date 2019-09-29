@@ -27,7 +27,7 @@ bool modelRotn = false;
 std::map<int, int> texIdMap;
 int tDuration;
 int currTick = 0;
-float timeStep = 18;
+float timeStep = 13;
 aiVector3D offset = aiVector3D(1.0f,1.0f,1.0f);
 double player_x = 10;
 double player_z = 0;
@@ -369,9 +369,21 @@ void updateModel(int tick)
 	
 	
 	for (uint meshID = 0; meshID < scene->mNumMeshes; meshID ++)
-	{
+	{	
+		
+
+
 		
 		aiMesh *mesh = scene->mMeshes[meshID];
+		
+		// clear vertices 
+		
+		for (uint vertID = 0; vertID < mesh->mNumVertices; vertID++)
+        {
+                mesh->mVertices[vertID] = aiVector3D(0);
+                mesh->mNormals[vertID] = aiVector3D(0);
+        }
+		
 		
 		for (uint i = 0; i < mesh->mNumBones; i ++)
 		{
@@ -405,6 +417,7 @@ void updateModel(int tick)
             for(uint k = 0; k < bone->mNumWeights; k++)
             {
 				unsigned int vid = (bone->mWeights[k]).mVertexId;
+				float weight = bone->mWeights[k].mWeight;
 				// get Inital data
 				aiVector3D vert = (initData + meshID)->mVertices[vid];
 				aiVector3D norm = (initData + meshID)->mNormals[vid];
@@ -412,8 +425,12 @@ void updateModel(int tick)
 				aiMatrix3x3 aiVert3x3 = aiMatrix3x3(boneTransform);
 				aiMatrix3x3 aiNorm3x3 = aiMatrix3x3(boneTransformTransposeInverse);
 				// preform transformations on inital data and update the mesh.
-				mesh->mVertices[vid] =  ((aiVert3x3 * vert) + aiVector3D(boneTransform.a4 , boneTransform.b4 , boneTransform.c4)) ;
-				mesh->mNormals[vid] = ((aiNorm3x3 * norm) + aiVector3D(boneTransformTransposeInverse.a4 , boneTransformTransposeInverse.b4,boneTransformTransposeInverse.c4));
+
+
+				mesh->mVertices[vid] += weight * ((aiVert3x3 * vert) +  aiVector3D(boneTransform.a4 , boneTransform.b4 , boneTransform.c4));
+				mesh->mNormals[vid] += weight * ((aiNorm3x3 * norm) + aiVector3D(boneTransformTransposeInverse.a4 , boneTransformTransposeInverse.b4,boneTransformTransposeInverse.c4));		
+				
+				
 
 			}		
 				
@@ -471,7 +488,7 @@ void drawFloorPlane()
 
     glBegin(GL_QUADS);
     glNormal3f(0.0, .0, -1.0);
-    floorMoveSpeed += 10;
+    floorMoveSpeed += 5;
 	
 	for(int i = 0 ; i < 500 ; i++)
 	{
@@ -483,10 +500,10 @@ void drawFloorPlane()
 	}
 	else{    glColor4f(0.0, 0.72, 0.56, 1.0); }
 	
-    glVertex3f(-1000 + (i * 200) - floorMoveSpeed,4000 ,2.5);
-    glVertex3f(-1000 +  (i * 200) - floorMoveSpeed,-4000 ,2.5);
-    glVertex3f(-800 + (i * 200) - floorMoveSpeed,-4000 ,2.5);
-    glVertex3f(-800  + (i * 200) - floorMoveSpeed, 4000,2.5);
+    glVertex3f(-1000 + (i * 200) - floorMoveSpeed,4000 ,3);
+    glVertex3f(-1000 +  (i * 200) - floorMoveSpeed,-4000 ,3);
+    glVertex3f(-800 + (i * 200) - floorMoveSpeed,-4000 ,3);
+    glVertex3f(-800  + (i * 200) - floorMoveSpeed, 4000,3);
             
 	}
 

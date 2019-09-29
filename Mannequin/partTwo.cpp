@@ -466,7 +466,7 @@ void drawFloorPlane()
 
     glBegin(GL_QUADS);
     glNormal3f(0.0, .0, -1.0);
-    floorMoveSpeed += 10;
+    floorMoveSpeed += 30;
 	
 	for(int i = 0 ; i < 500 ; i++)
 	{
@@ -478,10 +478,10 @@ void drawFloorPlane()
 	}
 	else{    glColor4f(0.0, 0.72, 0.56, 1.0); }
 	
-    glVertex3f(-1000 + (i * 200) - floorMoveSpeed,2000 ,2.5);
-    glVertex3f(-1000 +  (i * 200) - floorMoveSpeed,-2000 ,2.5);
-    glVertex3f(-800 + (i * 200) - floorMoveSpeed,-2000 ,2.5);
-    glVertex3f(-800  + (i * 200) - floorMoveSpeed, 2000,2.5);
+    glVertex3f(-1200 + (i * 600) - floorMoveSpeed,6000 ,2.5);
+    glVertex3f(-1200 +  (i * 600) - floorMoveSpeed,-6000 ,2.5);
+    glVertex3f(-600 + (i * 600) - floorMoveSpeed,-6000 ,2.5);
+    glVertex3f(-600  + (i * 600) - floorMoveSpeed, 6000,2.5);
             
 	}
 

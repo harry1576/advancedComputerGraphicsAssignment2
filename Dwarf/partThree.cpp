@@ -292,8 +292,7 @@ void updateModel(double tick)
 	
 	for (uint i = 0; i < anim->mNumChannels; i++)
 	{
-		if (i==1)
-		{ i = 2;}
+
 		
 		matPos = aiMatrix4x4(); //Identity
 		matRot = aiMatrix4x4();
@@ -340,29 +339,37 @@ void updateModel(double tick)
 		aiVector3D prevPosn;
 		double prevTime;
 		double nextTime;
-		for(uint posFrame = 0; posFrame < ndAnim->mNumPositionKeys; posFrame ++)
+		if(i != 1)
 		{
-		
-			if(tick >= ndAnim->mPositionKeys[posFrame].mTime)
+			for(uint posFrame = 0; posFrame < ndAnim->mNumPositionKeys; posFrame ++)
 			{
-				prevPosn = ndAnim->mPositionKeys[posFrame].mValue;
-				prevTime = ndAnim->mPositionKeys[posFrame].mTime;
-				continue;
-				
+			
+				if(tick >= ndAnim->mPositionKeys[posFrame].mTime)
+				{
+					prevPosn = ndAnim->mPositionKeys[posFrame].mValue;
+					prevTime = ndAnim->mPositionKeys[posFrame].mTime;
+					continue;
+					
+				}
+				nextPosn = ndAnim->mPositionKeys[posFrame].mValue;
+				nextTime = ndAnim->mPositionKeys[posFrame].mTime;
+				double timeFactor = (tick - prevTime)/(nextTime - prevTime) ;
+				posn = nextPosn + float(timeFactor) * (prevPosn - nextPosn);
+				matPos.Translation(posn, matPos);
+				break;
+					
 			}
-			nextPosn = ndAnim->mPositionKeys[posFrame].mValue;
-			nextTime = ndAnim->mPositionKeys[posFrame].mTime;
-			double timeFactor = (tick - prevTime)/(nextTime - prevTime) ;
-			posn = nextPosn + float(timeFactor) * (prevPosn - nextPosn);
-			matPos.Translation(posn, matPos);
-			break;
-				
 		}
-		
 		if(ndAnim->mNumPositionKeys == 1)
 		{
 			posn = ndAnim->mPositionKeys[0].mValue;
 			matPos.Translation(posn, matPos);
+		}
+		
+		if(i == 1)// middle
+		{
+			ndAnim = anim2->mChannels[1];//Channel
+			tick = 0.2364*tick;	
 		}
 		
 		if(i == 2)// lefthips
@@ -438,7 +445,7 @@ void updateModel(double tick)
 		
 		// change back to other channel animation
 				
-		if(i == 2 or i == 3 or i == 4 or i ==6 or i == 7 or i == 8)
+		if(i== 1 or i == 2 or i == 3 or i == 4 or i ==6 or i == 7 or i == 8)
 		{
 			ndAnim = anim->mChannels[i]; //Channe
 			tick =(1/ 0.2364)*tick;	
@@ -543,7 +550,7 @@ void drawFloorPlane()
 
     glBegin(GL_QUADS);
     glNormal3f(0.0, .0, -1.0);
-    floorMoveSpeed += 1.1;
+    floorMoveSpeed += 0.85;
 	
 	for(int i = 0 ; i < 500 ; i++)
 	{
@@ -555,10 +562,10 @@ void drawFloorPlane()
 	}
 	else{    glColor4f(0.0, 0.72, 0.56, 1.0); }
 	
-    glVertex3f(-1000 + (i * 200) - floorMoveSpeed,2000 ,2.5);
-    glVertex3f(-1000 +  (i * 200) - floorMoveSpeed,-2000 ,2.5);
-    glVertex3f(-800 + (i * 200) - floorMoveSpeed,-2000 ,2.5);
-    glVertex3f(-800  + (i * 200) - floorMoveSpeed, 2000,2.5);
+    glVertex3f(-1000 + (i * 200) - floorMoveSpeed,2000 ,31);
+    glVertex3f(-1000 +  (i * 200) - floorMoveSpeed,-2000 ,31);
+    glVertex3f(-800 + (i * 200) - floorMoveSpeed,-2000 ,31);
+    glVertex3f(-800  + (i * 200) - floorMoveSpeed, 2000,31);
             
 	}
 
