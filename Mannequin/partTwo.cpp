@@ -157,15 +157,9 @@ void render (const aiScene* sc, const aiNode* nd)
 
 		materialIndex = mesh->mMaterialIndex;  //Get material index attached to the mesh
 		mtl = sc->mMaterials[materialIndex];
-	
-	    if (mesh->HasTextureCoords(0))
-	    {
-			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D,texIdMap[meshIndex]);
 			
+		glEnable(GL_COLOR_MATERIAL);	
 			
-		}
-		
 		if (replaceCol)
 			glColor4fv(materialCol);   //User-defined colour
 		else if (AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_DIFFUSE, &diffuse))  //Get material colour from model
@@ -173,9 +167,23 @@ void render (const aiScene* sc, const aiNode* nd)
 		else
 			glColor4fv(materialCol);   //Default material colour
 
+		if (mesh->HasTextureCoords(0))
+		{
+			glDisable(GL_COLOR_MATERIAL);
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D,texIdMap[meshIndex]);	
+		}
+		else
+		{
+			glDisable(GL_TEXTURE_2D);
+			
+		}
+			
+
 		//Get the polygons from each mesh and draw them
 		for (uint k = 0; k < mesh->mNumFaces; k++)
-		{
+		{	
+
 			face = &mesh->mFaces[k];
 			GLenum face_mode;
 
@@ -192,17 +200,20 @@ void render (const aiScene* sc, const aiNode* nd)
 				int vertexIndex = face->mIndices[i]; 
 				if(mesh->HasVertexColors(0))
 					glColor4fv((GLfloat*)&mesh->mColors[0][vertexIndex]);
+				
 
 				//Assign texture coordinates here
 
 				if (mesh->HasNormals())
+				{
 					glNormal3fv(&mesh->mNormals[vertexIndex].x);
-				glVertex3fv(&mesh->mVertices[vertexIndex].x);
+					glVertex3fv(&mesh->mVertices[vertexIndex].x);
+				}
 
-				
 				if (mesh->HasTextureCoords(0))
 				{
 					glTexCoord2f(mesh->mTextureCoords[0][vertexIndex].x, mesh->mTextureCoords[0][vertexIndex].y);
+
 				}
 				
 			}
