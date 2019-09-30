@@ -51,7 +51,7 @@ meshInit* initData;
 
 
 //------------Modify the following as needed----------------------
-float materialCol[4] = { 0.0f, 0.0f, 0.0f, 0.0f };   //Default material colour (not used if model's colour is available)
+float materialCol[4] = { 1.0f, 1.0f, 1.0f, 1.0f };   //Default material colour (not used if model's colour is available)
 bool replaceCol = false;					   //Change to 'true' to set the model's colour to the above colour
 bool twoSidedLight = false;					   //Change to 'true' to enable two-sided lighting
 
