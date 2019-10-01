@@ -29,10 +29,8 @@ int tDuration;
 int currTick = 0;
 float timeStep = 13;
 aiVector3D offset = aiVector3D(1.0f,1.0f,1.0f);
-double player_x = 10;
-double player_z = 0;
 double zoomfactor = 1;
-double floorMoveSpeed = 0.1;
+double floorMoveSpeed = 0;
 
 
 // Mesh Struture to hold initial values
@@ -271,7 +269,6 @@ void initialise()
 
 void updateModel(int tick)
 {
-	int index;
 	aiAnimation* anim = scene->mAnimations[0];
 	aiMatrix4x4 matPos, matRot, matProd;
 	aiMatrix3x3 matRot3;
@@ -287,40 +284,28 @@ void updateModel(int tick)
 		matPos = aiMatrix4x4(); //Identity
 		matRot = aiMatrix4x4();
 		aiNodeAnim* ndAnim = anim->mChannels[i]; //Channel
-		
-		
-		
-		/*
-		if (ndAnim->mNumPositionKeys > 1) index = tick;
-		else index = 0;
-		aiVector3D posn = (ndAnim->mPositionKeys[index]).mValue;
-		matPos.Translation(posn, matPos);
-		*/
-		
+				
 		// Position Interpolation
 		aiVector3D posn;
 		aiVector3D nextPosn;
 		aiVector3D prevPosn;
 		double prevTime;
 		double nextTime;
-		for(uint posFrame = 0; posFrame < ndAnim->mNumPositionKeys; posFrame ++)
+		uint posFrame;
+		for(posFrame = 0; posFrame < ndAnim->mNumPositionKeys-1; posFrame ++)
 		{
 		
 			if(tick >= ndAnim->mPositionKeys[posFrame].mTime)
 			{
 				prevPosn = ndAnim->mPositionKeys[posFrame].mValue;
-				prevTime = ndAnim->mPositionKeys[posFrame].mTime;
-				continue;
-				
-			}
-			nextPosn = ndAnim->mPositionKeys[posFrame].mValue;
-			nextTime = ndAnim->mPositionKeys[posFrame].mTime;
-			double timeFactor = (tick - prevTime)/(nextTime - prevTime) ;
-			posn = nextPosn + float(timeFactor) * (prevPosn - nextPosn);
-			matPos.Translation(posn, matPos);
-			break;
-				
+				prevTime = ndAnim->mPositionKeys[posFrame].mTime;	
+			}	
 		}
+		nextPosn = ndAnim->mPositionKeys[posFrame].mValue;
+		nextTime = ndAnim->mPositionKeys[posFrame].mTime;
+		double timeFactor = (tick - prevTime)/(nextTime - prevTime) ;
+		posn = nextPosn + float(timeFactor) * (prevPosn - nextPosn);
+		matPos.Translation(posn, matPos);
 		
 		if(ndAnim->mNumPositionKeys == 1)
 		{
@@ -344,24 +329,26 @@ void updateModel(int tick)
 		aiQuaternion nextRot;
 		double rotPrevTime;
 		double rotNextTime;
-		for(uint rotFrame = 0; ndAnim->mNumRotationKeys;rotFrame++)
+		uint rotFrame;
+		for(rotFrame = 0;rotFrame < ndAnim->mNumRotationKeys-1;)
 		{
 			if(tick >= ndAnim->mRotationKeys[rotFrame].mTime)
 			{
 				prevRot = ndAnim->mRotationKeys[rotFrame].mValue;
 				rotPrevTime = ndAnim->mRotationKeys[rotFrame].mTime;
-				continue;
 			}
-			
-			nextRot = ndAnim->mRotationKeys[rotFrame].mValue;
-			rotNextTime = ndAnim->mRotationKeys[rotFrame].mTime;
-			double timeFactor2 = (tick - rotPrevTime)/(rotNextTime - rotPrevTime);
-			rotn.Interpolate(rotn,prevRot,nextRot,timeFactor2);
-			matRot3 = rotn.GetMatrix();
-			matRot = aiMatrix4x4(matRot3);
-			break;
-			
+			rotFrame++;
+
+
 		}
+		nextRot = ndAnim->mRotationKeys[rotFrame].mValue;
+		rotNextTime = ndAnim->mRotationKeys[rotFrame].mTime;
+		double timeFactor2 = (tick - rotPrevTime)/(rotNextTime - rotPrevTime);
+		rotn.Interpolate(rotn,prevRot,nextRot,timeFactor2);
+		matRot3 = rotn.GetMatrix();
+		matRot = aiMatrix4x4(matRot3);
+		
+		
 	
 	
 		if(ndAnim->mNumRotationKeys == 1)
@@ -571,7 +558,7 @@ void display()
 	glLoadIdentity();
 	float lightPosn[4] = { 50, 50, 50, 1 };         //Default light's position
 
-	gluLookAt(player_z,0, player_x, 0, 0, 0, 0, 1, 0);
+	gluLookAt(0,0, 10, 0, 0, 0, 0, 1, 0);
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 	
 	glRotatef(angle, 0, 1, 0);

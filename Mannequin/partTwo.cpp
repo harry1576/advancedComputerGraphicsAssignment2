@@ -232,7 +232,7 @@ void initialise()
 {
 	float ambient[4] = { 0.8, 0.8, 0.8, 1.0 };  //Ambient light
 	float white[4] = { 1, 1, 1, 1 };			//Light's colour
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClearColor(1.0f, 0.2f, 0.56f, 1.0f);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 	glEnable(GL_DEPTH_TEST);
@@ -370,14 +370,7 @@ void updateModel(int tick)
 		
 		aiMesh *mesh = scene->mMeshes[meshID];
 		
-		for(uint q = 0; q < mesh->mNumVertices; q++)
-		{
-			mesh->mVertices[q] = aiVector3D(0);
-			mesh->mNormals[q] = aiVector3D(0);
 
-			
-			
-		}
 		
 		for (uint i = 0; i < mesh->mNumBones; i ++)
 		{
@@ -549,7 +542,7 @@ void display()
 	glLoadIdentity();
 	float lightPosn[4] = { 50, 50, 50, 1 };         //Default light's position
 
-	gluLookAt(player_z,0, player_x, 0, 0, 0, 0, 1, 0);
+	gluLookAt(0,0, 10, 0, 0, 0, 0, 1, 0);
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 	
 	glRotatef(angle, 0, 1, 0);

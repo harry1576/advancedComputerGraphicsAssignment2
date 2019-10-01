@@ -35,7 +35,7 @@ double player_x = 10;
 double player_z = 0;
 double zoomfactor = 1;
 double floorMoveSpeed = 0.00001;
-
+int animationMode = 0;
 
 // Mesh Struture to hold initial values
 struct meshInit
@@ -274,7 +274,6 @@ void initialise()
 void updateModel(double tick)
 {
 	int index;
-	int tick2 = tick/15;
 	aiAnimation* anim = scene->mAnimations[0];
 	aiAnimation* anim2 = animation->mAnimations[0];
 
@@ -299,47 +298,13 @@ void updateModel(double tick)
 		ndAnim = anim->mChannels[i]; //Channel
 
 		
-
-		/*
-		if(anim2->mNumChannels > anim->mNumChannels)
-		{
-			for(uint q = 0; q < anim->mNumChannels; q++)
-			{
-				if(anim->mChannels[q]->mNodeName == anim2->mChannels[q]->mNodeName)
-				{
-					std::cout << "Zoom Factor" << endl;
-				}
-			}
-		}
-		
-		if(anim2->mNumChannels < anim->mNumChannels)
-		{
-			for(uint z = 0; z < anim2->mNumChannels; z++)
-			{
-				if(anim->mChannels[z]->mNodeName == anim2->mChannels[z]->mNodeName)
-				{
-					std::cout << "Zoom Factor" << endl;
-				}
-			}
-		}
-		*/
-		
-		
-
-		/*
-		if (ndAnim->mNumPositionKeys > 1) index = tick;
-		else index = 0;
-		aiVector3D posn = (ndAnim->mPositionKeys[index]).mValue;
-		matPos.Translation(posn, matPos);
-		*/
-		
 		// Position Interpolation
 		aiVector3D posn;
 		aiVector3D nextPosn;
 		aiVector3D prevPosn;
 		double prevTime;
 		double nextTime;
-		if(i != 1)
+		if(i != 1 or animationMode != 1)
 		{
 			for(uint posFrame = 0; posFrame < ndAnim->mNumPositionKeys; posFrame ++)
 			{
@@ -360,49 +325,52 @@ void updateModel(double tick)
 					
 			}
 		}
-		if(ndAnim->mNumPositionKeys == 1)
+					if(ndAnim->mNumPositionKeys == 1)
+			{
+				posn = ndAnim->mPositionKeys[0].mValue;
+				matPos.Translation(posn, matPos);
+			}
+		if(animationMode == 1)
 		{
-			posn = ndAnim->mPositionKeys[0].mValue;
-			matPos.Translation(posn, matPos);
+
+			
+			if(i == 1)// middle
+			{
+				ndAnim = anim2->mChannels[1];//Channel
+				tick = 0.2364*tick;	
+			}
+			
+			if(i == 2)// lefthips
+			{
+				ndAnim = anim2->mChannels[15];//Channel
+				tick = 0.2364*tick;	
+			}
+			if(i == 3) //lknee
+			{
+				ndAnim = anim2->mChannels[16];//Channel
+				tick = 0.2364*tick;	
+			}
+			if(i == 4)// lankle
+			{
+				ndAnim = anim2->mChannels[17];//Channel
+				tick = 0.2364*tick;	
+			}
+			if(i == 6) //rthigh
+			{
+				ndAnim = anim2->mChannels[18];//Channel
+				tick = 0.2364*tick;	
+			}		
+			if(i == 7) //rknee
+			{
+				ndAnim = anim2->mChannels[19];//Channel
+				tick = 0.2364*tick;	
+			}
+			if(i == 8) //rankle
+			{
+				ndAnim = anim2->mChannels[20];//Channel
+				tick = 0.2364*tick;	
+			}
 		}
-		
-		if(i == 1)// middle
-		{
-			ndAnim = anim2->mChannels[1];//Channel
-			tick = 0.2364*tick;	
-		}
-		
-		if(i == 2)// lefthips
-		{
-			ndAnim = anim2->mChannels[15];//Channel
-			tick = 0.2364*tick;	
-		}
-		if(i == 3) //lknee
-		{
-			ndAnim = anim2->mChannels[16];//Channel
-			tick = 0.2364*tick;	
-		}
-		if(i == 4)// lankle
-		{
-			ndAnim = anim2->mChannels[17];//Channel
-			tick = 0.2364*tick;	
-		}
-		if(i == 6) //rthigh
-		{
-			ndAnim = anim2->mChannels[18];//Channel
-			tick = 0.2364*tick;	
-		}		
-		if(i == 7) //rknee
-		{
-			ndAnim = anim2->mChannels[19];//Channel
-			tick = 0.2364*tick;	
-		}
-		if(i == 8) //rankle
-		{
-			ndAnim = anim2->mChannels[20];//Channel
-			tick = 0.2364*tick;	
-		}
-	
 		
 		// Quaternion Interpolation
 		aiQuaternion rotn;
@@ -445,7 +413,7 @@ void updateModel(double tick)
 		
 		// change back to other channel animation
 				
-		if(i== 1 or i == 2 or i == 3 or i == 4 or i ==6 or i == 7 or i == 8)
+		if((i== 1 or i == 2 or i == 3 or i == 4 or i ==6 or i == 7 or i == 8) && animationMode == 1)
 		{
 			ndAnim = anim->mChannels[i]; //Channe
 			tick =(1/ 0.2364)*tick;	
@@ -533,7 +501,8 @@ void update(int value)
 //----Keyboard callback to toggle initial model orientation---
 void keyboard(unsigned char key, int x, int y)
 {
-	if(key == '1') modelRotn = !modelRotn;   //Enable/disable initial model rotation
+	if(key == '1') animationMode = 0;   //Enable/disable initial model rotation
+	if(key == '2') animationMode = 1;   
 	glutPostRedisplay();
 }
 
@@ -550,7 +519,7 @@ void drawFloorPlane()
 
     glBegin(GL_QUADS);
     glNormal3f(0.0, .0, -1.0);
-    floorMoveSpeed += 0.85;
+    floorMoveSpeed += 0.85 * animationMode;
 	
 	for(int i = 0 ; i < 500 ; i++)
 	{
@@ -618,7 +587,7 @@ void display()
 	glLoadIdentity();
 	float lightPosn[4] = { 50, 50, 50, 1 };         //Default light's position
 
-	gluLookAt(player_z,0, player_x, 0, 0, 0, 0, 1, 0);
+	gluLookAt(0,0, 15, 0, 0, 0, 0, 1, 0);
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 	
 	glRotatef(angle, 0, 1, 0);
@@ -640,13 +609,19 @@ void display()
 	float yc = (scene_min.y + scene_max.y)*0.5;
 	float zc = (scene_min.z + scene_max.z)*0.5;
 	// center the model
-	
-	glTranslatef(-xc, -yc, -zc);
-    render(scene, scene->mRootNode);
-    glRotatef(-90, 0, 1,0 );
-    glRotatef(90, 1, 0, 0);
+	glPushMatrix();
+		glTranslatef(0,(animationMode * 28) + 5 , 0);
+		glTranslatef(-xc, -yc, -zc);
+		render(scene, scene->mRootNode);
+	glPopMatrix();
+    
+    glPushMatrix();
+		glRotatef(-90, 0, 1,0 );
+		glRotatef(90, 1, 0, 0);
+		    drawFloorPlane();
 
-    drawFloorPlane();
+	glPopMatrix();
+
 	glutSwapBuffers();
 }
 
